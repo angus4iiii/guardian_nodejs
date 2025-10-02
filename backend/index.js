@@ -57,7 +57,7 @@ app.post('/api/autocal', (req, res) => {
       return res.status(400).json({ error: 'Missing crankSerialNumber' });
    }
    dbFrankfurt.query(
-      'SELECT resultcode FROM devicecalibrationrunresults WHERE crankserialnumber = ?',
+      'SELECT resultcode FROM devicecalibrationrunresults WHERE crankserialnumber = ? ORDER BY datecreated DESC LIMIT 1',
       [crankSerialNumber],
       (err, results) => {
          if (!results || results.length === 0) {
