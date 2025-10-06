@@ -7,11 +7,13 @@ const cors = require('cors');
 const app = express();
 app.use(express.json());
 app.use(cors());
-const PORT = process.env.PORT || 5050;
+const PORT = process.env.PORT || 3001;
 
 // Read DB credentials for frankfurtdb
 const credsFrankfurtPath = path.join(__dirname, 'db-creds-test.json');
-const dbCredsFrankfurt = JSON.parse(fs.readFileSync(credsFrankfurtPath, 'utf8'));
+const dbCredsFrankfurt = JSON.parse(
+   fs.readFileSync(credsFrankfurtPath, 'utf8')
+);
 
 // Read DB credentials for skynet3
 const credsSkynetPath = path.join(__dirname, 'db-creds-test-skynet.json');
@@ -22,7 +24,7 @@ const dbFrankfurt = mysql.createConnection({
    user: dbCredsFrankfurt.user,
    password: dbCredsFrankfurt.password,
    database: dbCredsFrankfurt.database,
-   port: dbCredsFrankfurt.port
+   port: dbCredsFrankfurt.port,
 });
 
 const dbSkynet = mysql.createConnection({
@@ -30,10 +32,10 @@ const dbSkynet = mysql.createConnection({
    user: dbCredsSkynet.user,
    password: dbCredsSkynet.password,
    database: dbCredsSkynet.database,
-   port: dbCredsSkynet.port
+   port: dbCredsSkynet.port,
 });
 
-dbFrankfurt.connect((err) => {
+dbFrankfurt.connect(err => {
    if (err) {
       console.error('Error connecting to frankfurtdb:', err);
    } else {
@@ -41,7 +43,7 @@ dbFrankfurt.connect((err) => {
    }
 });
 
-dbSkynet.connect((err) => {
+dbSkynet.connect(err => {
    if (err) {
       console.error('Error connecting to skynet3:', err);
    } else {
@@ -68,8 +70,10 @@ app.post('/api/autocal', (req, res) => {
             console.error('DB query error:', err);
             return res.status(500).json({ error: 'Database error' });
          }
-         res.json({ resultcodes: results.map(r => Number(r.resultcode)),
-                    variationmetric: results.map(r => parseFloat(r.variationmetric)) });
+         res.json({
+            resultcodes: results.map(r => Number(r.resultcode)),
+            variationmetric: results.map(r => parseFloat(r.variationmetric)),
+         });
       }
    );
 });
@@ -81,7 +85,7 @@ app.post('/api/autoppt', (req, res) => {
       return res.status(400).json({ error: 'Missing crankSerial' });
    }
    dbFrankfurt.query(
-      'SELECT resultcode FROM devicepressuretestvalues WHERE crankserialnumber = ? ORDER BY datecreated DESC',
+      'SELECT resultcode FROM devicepressuretestvalues WHERE crankserialnumber = ? ORDER BY datecreated DESC LIMIT 1',
       [crankSerial],
       (err, results) => {
          if (!results || results.length === 0) {
@@ -104,7 +108,7 @@ app.post('/api/podoqc', (req, res) => {
       return res.status(400).json({ error: 'Missing crankSerial' });
    }
    dbFrankfurt.query(
-      `SELECT devicepodoqcdata.resultcode FROM devicecalibrationcrankinfo dci INNER JOIN devicecalibrationng dcn ON dci.calid = dcn.calid INNER JOIN devicepodoqcdata ON dcn.serialnumber = devicepodoqcdata.serialnumber WHERE dci.crankserialnumber = 'A0S18C25|39|01001' ORDER BY devicepodoqcdata.datecreated DESC`,
+      `SELECT devicepodoqcdata.resultcode FROM devicecalibrationcrankinfo dci INNER JOIN devicecalibrationng dcn ON dci.calid = dcn.calid INNER JOIN devicepodoqcdata ON dcn.serialnumber = devicepodoqcdata.serialnumber WHERE dci.crankserialnumber = 'A0S18C25|39|01001' ORDER BY devicepodoqcdata.datecreated DESC LIMIT 1`,
       [crankSerial],
       (err, results) => {
          if (!results || results.length === 0) {
@@ -127,19 +131,20 @@ app.post('/api/temptest', (req, res) => {
       return res.status(400).json({ error: 'Missing crankSerial' });
    }
    dbFrankfurt.query(
-      'SELECT resultcode FROM devicetemperaturerunresults WHERE crankserialnumber = ? ORDER BY datecreated DESC',
+      'SELECT resultcode FROM devicetemperaturerunresults WHERE crankserialnumber = ? ORDER BY datecreated DESC LIMIT 1',
       [crankSerial],
       (err, results) => {
-      if (!results || results.length === 0) {
-        // No results found, return empty array
-        return res.json({ resultcodes: [] });
+         if (!results || results.length === 0) {
+            // No results found, return empty array
+            return res.json({ resultcodes: [] });
+         }
+         if (err) {
+            return res.status(500).json({ error: 'Database error' });
+         }
+         // Convert resultcode to number, removing leading zeros
+         res.json({ resultcodes: results.map(r => Number(r.resultcode)) });
       }
-      if (err) {
-         return res.status(500).json({ error: 'Database error' });
-      }
-      // Convert resultcode to number, removing leading zeros
-      res.json({ resultcodes: results.map(r => Number(r.resultcode)) });
-   });
+   );
 });
 
 // Route for Progress Events
@@ -149,7 +154,7 @@ app.post('/api/progressevents', (req, res) => {
       return res.status(400).json({ error: 'Missing productionsn' });
    }
    dbSkynet.query(
-      'SELECT event FROM crank_progress_events WHERE productionsn = ? ORDER BY id DESC',
+      'SELECT event FROM crank_progress_events WHERE productionsn = ? ORDER BY id DESC LIMIT 1',
       [productionsn],
       (err, results) => {
          if (!results || results.length === 0) {
@@ -166,5 +171,5 @@ app.post('/api/progressevents', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Backend server listening on port ${PORT}`);
+   console.log(`Backend server listening on port ${PORT}`);
 });

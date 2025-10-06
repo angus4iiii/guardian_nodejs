@@ -1,7 +1,7 @@
 {
-  "user":"skynet3_user",
-  "password":"8d256f61-9329-46d2-bbb4-ecebe28dd617",
-  "database":"skynet3",
-  "host":"localhost",
+  "user": "skynet3_user",
+  "password": "8d256f61-9329-46d2-bbb4-ecebe28dd617",
+  "database": "skynet3",
+  "host": "localhost",
   "port": 3306
 }
