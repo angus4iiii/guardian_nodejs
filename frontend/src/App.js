@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import pkg from '../package.json';
 import './App.css';
 
 const BACKEND_URL = 'http://localhost:3001';
@@ -19,10 +20,27 @@ function App() {
 
    const inputRef = useRef(null);
    const resetBtnRef = useRef(null);
+   const version = pkg.version;
+   const [changelog, setChangelog] = useState(null);
    useEffect(() => {
       if (inputRef.current) {
          inputRef.current.focus();
       }
+   }, []);
+
+   useEffect(() => {
+      // Fetch README from repo root and extract Changelog section
+      fetch('../../README.md')
+         .then(res => res.text())
+         .then(text => {
+            const changelogIndex = text.indexOf('## Changelog');
+            if (changelogIndex !== -1) {
+               setChangelog(text.slice(changelogIndex));
+            } else {
+               setChangelog(text);
+            }
+         })
+         .catch(() => setChangelog(null));
    }, []);
 
    const handleKeyDown = async e => {
@@ -41,6 +59,7 @@ function App() {
             console.log('podoqcResponse status:', podoqcResponse.status);
             if (podoqcResponse.ok) {
                const podoqcData = await podoqcResponse.json();
+               console.log('podoqcData:', podoqcData);
                if (
                   podoqcData.resultcodes &&
                   podoqcData.resultcodes.length > 0
@@ -48,7 +67,7 @@ function App() {
                   newResults[0] =
                      podoqcData.resultcodes[0] === 0 ? 'PASS' : 'FAIL';
                } else {
-                  newResults[0] = 'FAIL';
+                  newResults[0] = 'NO DATA';
                }
             } else {
                newResults[0] = 'FAIL';
@@ -275,15 +294,19 @@ function App() {
                                  ? '#b6f5b6'
                                  : results[idx] === 'FAIL'
                                  ? '#f5b6b6'
+                                 : results[idx] === 'NO DATA'
+                                 ? '#e8e8e8'
                                  : 'inherit',
                            color:
                               results[idx] === 'PASS'
                                  ? '#1a4d1a'
                                  : results[idx] === 'FAIL'
                                  ? '#a41a1a'
+                                 : results[idx] === 'NO DATA'
+                                 ? '#666666'
                                  : 'inherit',
                            fontWeight:
-                              results[idx] === 'PASS' || results[idx] === 'FAIL'
+                              results[idx] === 'PASS' || results[idx] === 'FAIL' || results[idx] === 'NO DATA'
                                  ? 'bold'
                                  : 'normal',
                            textAlign: 'center',
@@ -314,6 +337,29 @@ function App() {
          >
             Reset
          </button>
+           {/* Version and changelog box */}
+           <div
+              style={{
+                 marginTop: '2rem',
+                 padding: '1rem',
+                 border: '1px solid #ddd',
+                 borderRadius: 6,
+                 backgroundColor: '#fafafa',
+                 fontSize: '0.9rem',
+              }}
+           >
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                 <div>
+                    <strong>Version:</strong> {version || 'unknown'}
+                 </div>
+                 <div>
+                    <em>Changelog (excerpt)</em>
+                 </div>
+              </div>
+              <pre style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem', maxHeight: 200, overflow: 'auto' }}>
+                 {changelog || 'Changelog not available.'}
+              </pre>
+           </div>
       </div>
    );
 }

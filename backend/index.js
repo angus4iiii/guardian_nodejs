@@ -59,7 +59,7 @@ app.post('/api/autocal', (req, res) => {
       return res.status(400).json({ error: 'Missing crankSerialNumber' });
    }
    dbFrankfurt.query(
-      'SELECT resultcode FROM devicecalibrationrunresults WHERE crankserialnumber = ? ORDER BY datecreated DESC LIMIT 1',
+      'SELECT * FROM devicecalibrationrunresults WHERE crankserialnumber = ? ORDER BY datecreated DESC LIMIT 1',
       [crankSerialNumber],
       (err, results) => {
          if (!results || results.length === 0) {
@@ -108,7 +108,7 @@ app.post('/api/podoqc', (req, res) => {
       return res.status(400).json({ error: 'Missing crankSerial' });
    }
    dbFrankfurt.query(
-      `SELECT devicepodoqcdata.resultcode FROM devicecalibrationcrankinfo dci INNER JOIN devicecalibrationng dcn ON dci.calid = dcn.calid INNER JOIN devicepodoqcdata ON dcn.serialnumber = devicepodoqcdata.serialnumber WHERE dci.crankserialnumber = 'A0S18C25|39|01001' ORDER BY devicepodoqcdata.datecreated DESC LIMIT 1`,
+      `SELECT devicepodoqcdata.resultcode FROM devicecalibrationcrankinfo dci INNER JOIN devicecalibrationng dcn ON dci.calid = dcn.calid INNER JOIN devicepodoqcdata ON dcn.serialnumber = devicepodoqcdata.serialnumber WHERE dci.crankserialnumber = ? ORDER BY devicepodoqcdata.datecreated DESC LIMIT 1`,
       [crankSerial],
       (err, results) => {
          if (!results || results.length === 0) {

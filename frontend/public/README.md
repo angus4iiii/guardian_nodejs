@@ -13,6 +13,7 @@
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
+- [Change Log](#changelog)
 
 ## Overview
 Project Guardian is designed to be the final check of the cranks before leaving the factory floor.
@@ -59,3 +60,8 @@ Specify your project license here.
 
 ## Contact
 Angus Ho <angus.ho@4iiii.com>
+
+## Changelog
+
+### 0.1.0 - Initial release
+- Change Pod OQC to have No Data results instead of Fail

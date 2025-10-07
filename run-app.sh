@@ -1,13 +1,16 @@
-#!/bin/bash
-# Script to launch both frontend and backend servers
+sudo killall node
+sudo killall ssh
+echo "Starting SSH tunnel..."
+nohup ssh -N -L3306:prod-4iiii-db.csjvti7yzqxd.us-west-2.rds.amazonaws.com:3306 ubuntu@mfg.4iiiize.com > ssh-tunnel.log 2>&1 &
 
+echo "Waiting for tunnel to initialize..."
+for i in {1..10}; do
+  lsof -iTCP:3307 -sTCP:LISTEN | grep ssh && break
+  sleep 1
+done
 
-# Start backend (Express) in foreground so logs are visible
 echo "Starting backend..."
-(cd backend && node index.js)
+nohup bash -c "(cd backend && node index.js > ../backend.log 2>&1 &)"
 
-# Start frontend (React) in background
 echo "Starting frontend..."
-(cd frontend && npm start &)
-
-echo "Backend logs will be shown here. Frontend is running in the background."
+nohup bash -c "(cd frontend && npm start > ../frontend.log 2>&1 &)"
