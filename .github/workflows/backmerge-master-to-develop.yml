@@ -1,0 +1,27 @@
+name: Backmerge Master to Develop
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  backmerge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request from master to develop
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          source: master
+          target: develop
+          title: '🔄 Backmerge from master to develop'
+          body: |
+            This PR was automatically generated to sync changes from `master` into `develop`.
+            Please review and merge to keep branches aligned.
+          draft: false
+          delete-branch: false
