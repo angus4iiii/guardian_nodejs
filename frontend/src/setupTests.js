@@ -4,6 +4,8 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
+const BACKEND_URL = 'http://localhost:3001';
+
 function testBackendWithRandomSerials() {
   for (let i = 0; i < 10; i++) {
     const crankSerial = 'TEST' + Math.floor(Math.random() * 1000000);
@@ -21,3 +23,6 @@ function testBackendWithRandomSerials() {
       });
   }
 }
+
+// Export the function for debugging
+module.exports = { testBackendWithRandomSerials };

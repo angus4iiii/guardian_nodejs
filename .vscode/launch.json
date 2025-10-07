@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Guardian Unit Tests",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/debug-test.js",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "cwd": "${workspaceFolder}",
+      "runtimeArgs": ["--inspect-brk"],
+      "stopOnEntry": false
+    }
+  ]
+}
