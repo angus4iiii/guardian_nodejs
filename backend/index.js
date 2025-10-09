@@ -6,7 +6,46 @@ const cors = require('cors');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+// Centralized helper to apply CORS headers for both preflight and actual responses
+function applyCorsHeaders(req, res) {
+   const reqOrigin = req.headers['origin'];
+   const found = accessControlAllowOrigin.find(origin => origin === reqOrigin);
+
+   if (found) {
+      res.setHeader('Access-Control-Allow-Origin', found);
+      res.setHeader('Access-Control-Allow-Headers', '*');
+      return true;
+   }
+   return false;
+}
+// Allowed origins for CORS
+const accessControlAllowOrigin = [
+   'http://localhost:3000',
+   'https://dev.4iiiize.com',
+];
+
+app.options('/*splat', (req, res) => {
+   const applied = applyCorsHeaders(req, res);
+   if (applied) {
+      console.log('CORS allowed for origin:', req.headers['origin']);
+   } else {
+      console.log('CORS origin not in allowlist, origin header was:', req.headers['origin']);
+   }
+
+   // MUST end the preflight response otherwise the browser will keep it pending
+   res.status(204).send();
+});
+
+app.post('/*splat', (req, res, next) => {
+   applyCorsHeaders(req, res);
+   next();
+});
+
+app.get('/*splat', (req, res, next) => {
+   applyCorsHeaders(req, res);
+   next();
+});
+
 const PORT = process.env.PORT || 3001;
 
 // Read DB credentials for frankfurtdb
@@ -147,6 +186,27 @@ app.post('/api/temptest', (req, res) => {
    );
 });
 
+// New endpoint to return crankSide for a given productionsn
+// Accepts query param ?productionsn= or uses a default example if not provided
+app.get('/api/crankside', (req, res) => {
+   const productionsn = req.query.productionsn || 'A0S10B25|41|00493';
+
+   dbSkynet.query(
+      'SELECT side FROM crank_serials WHERE productionsn = ? ORDER BY id DESC LIMIT 1',
+      [productionsn],
+      (err, results) => {
+         if (err) {
+            console.error('Error querying crank_serials:', err);
+            return res.status(500).json({ error: 'Database error' });
+         }
+
+         const crankSide =
+            results && results.length > 0 ? results[0].side : null;
+         return res.json({ crankSide });
+      }
+   );
+});
+
 // Route for Progress Events
 app.post('/api/progressevents', (req, res) => {
    const { productionsn } = req.body;
@@ -154,7 +214,7 @@ app.post('/api/progressevents', (req, res) => {
       return res.status(400).json({ error: 'Missing productionsn' });
    }
    dbSkynet.query(
-      'SELECT event FROM crank_progress_events WHERE productionsn = ? ORDER BY id DESC LIMIT 1',
+      'SELECT event FROM crank_progress_events WHERE productionsn = ? ORDER BY id DESC',
       [productionsn],
       (err, results) => {
          if (!results || results.length === 0) {

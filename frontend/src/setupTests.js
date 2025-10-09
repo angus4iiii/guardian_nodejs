@@ -6,6 +6,11 @@ import '@testing-library/jest-dom';
 
 const BACKEND_URL = 'http://localhost:3001';
 
+// Test case 001 (A1S18A25|40|02304): DS with VM 0.73 
+// Test case 002 (A1S18A25|40|02305): Fake PO's with Cranks at various states
+// test case 003 (A1S18A25|40|02306): Drive Side
+// Test case 004 (): Non Drive Side with August Gauges
+
 function testBackendWithRandomSerials() {
   for (let i = 0; i < 10; i++) {
     const crankSerial = 'TEST' + Math.floor(Math.random() * 1000000);

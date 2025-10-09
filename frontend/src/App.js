@@ -10,7 +10,7 @@ function App() {
    const tests = [
       { name: 'Pod OQC' },
       { name: 'AutoCal' },
-      { name: 'VM <= 0.6' },
+      { name: 'VM' },
       { name: 'Auto PPT' },
       { name: 'Temp Test' },
       { name: 'OQC' },
@@ -22,6 +22,12 @@ function App() {
    const resetBtnRef = useRef(null);
    const version = pkg.version;
    const [changelog, setChangelog] = useState(null);
+   const [crankSide, setCrankSide] = useState(null);
+   // vmThresholdNumeric used for comparisons; vmThresholdDisplay used for UI
+   const vmThresholdNumeric = String(crankSide) === '1' ? 0.75 : 0.6;
+   const vmThresholdDisplay =
+      crankSide === null ? '?' : vmThresholdNumeric.toFixed(2);
+
    useEffect(() => {
       if (inputRef.current) {
          inputRef.current.focus();
@@ -45,7 +51,38 @@ function App() {
 
    const handleKeyDown = async e => {
       if (e.key === 'Enter') {
-         let newResults = Array(tests.length).fill('');
+         let newResults = Array(tests.length).fill('')
+         let crankSideValue = null;
+         let vmThresholdLocal = null;
+
+         try {
+            const csResp = await fetch(
+               `${BACKEND_URL}/api/crankside?productionsn=${encodeURIComponent(
+                  crankSerial
+               )}`
+            );
+            if (csResp.ok) {
+               const csData = await csResp.json();
+               crankSideValue = csData.crankSide ?? null;
+               setCrankSide(crankSideValue);
+               vmThresholdLocal = String(crankSideValue) === '1' ? 0.75 : 0.6;
+               // If crankSide indicates drive side (1), mark some tests as not run
+               if (String(crankSideValue) === '1') {
+                  newResults[3] = 'NOT RUN'; // Auto PPT
+                  newResults[6] = 'NOT RUN'; // FindMy
+               }
+            } else {
+               crankSideValue = null;
+               setCrankSide(null);
+               vmThresholdLocal = null;
+            }
+         } catch (err) {
+            console.error('crankside fetch error:', err);
+            crankSideValue = null;
+            setCrankSide(null);
+            vmThresholdLocal = null;
+         }
+
          // Pod OQC
          try {
             console.log('Sending POST to', `${BACKEND_URL}/api/podoqc`, {
@@ -91,8 +128,11 @@ function App() {
                const data = await response.json();
                if (data.resultcodes && data.resultcodes.length > 0) {
                   newResults[1] = data.resultcodes[0] === 0 ? 'PASS' : 'FAIL';
+                  console.log('variationmetric and vmThresholdLocal:', data.variationmetric, vmThresholdLocal);
                   newResults[2] =
-                     data.variationmetric[0] <= 0.6 ? 'PASS' : 'FAIL';
+                     data.variationmetric[0] <= vmThresholdLocal
+                        ? 'PASS'
+                        : 'FAIL';
                } else {
                   newResults[1] = 'FAIL';
                   newResults[2] = 'FAIL';
@@ -106,32 +146,34 @@ function App() {
             newResults[2] = 'FAIL';
             console.error('API error:', err);
          }
-         // Auto PPT
-         try {
-            console.log('Sending POST to', `${BACKEND_URL}/api/autoppt`, {
-               crankSerial,
-            });
-            const pptResponse = await fetch(`${BACKEND_URL}/api/autoppt`, {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ crankSerial: crankSerial }),
-            });
-            console.log('pptResponse status:', pptResponse.status);
-            if (pptResponse.ok) {
-               const pptData = await pptResponse.json();
-               if (pptData.resultcodes && pptData.resultcodes.length > 0) {
-                  newResults[3] =
-                     pptData.resultcodes[0] === 0 ? 'PASS' : 'FAIL';
+         // Auto PPT (skip if crankSide indicates Drive Side)
+         if (String(crankSideValue) !== '1') {
+            try {
+               console.log('Sending POST to', `${BACKEND_URL}/api/autoppt`, {
+                  crankSerial,
+               });
+               const pptResponse = await fetch(`${BACKEND_URL}/api/autoppt`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ crankSerial: crankSerial }),
+               });
+               console.log('pptResponse status:', pptResponse.status);
+               if (pptResponse.ok) {
+                  const pptData = await pptResponse.json();
+                  if (pptData.resultcodes && pptData.resultcodes.length > 0) {
+                     newResults[3] =
+                        pptData.resultcodes[0] === 0 ? 'PASS' : 'FAIL';
+                  } else {
+                     newResults[3] = 'FAIL';
+                  }
                } else {
                   newResults[3] = 'FAIL';
                }
-            } else {
+            } catch (err) {
                newResults[3] = 'FAIL';
+               console.error('API error:', err);
             }
-         } catch (err) {
-            newResults[3] = 'FAIL';
-            console.error('API error:', err);
-         }
+         } // else leave newResults[3] as 'NOT RUN'
          // Temp Test
          try {
             console.log('Sending POST to', `${BACKEND_URL}/api/temptest`, {
@@ -195,35 +237,38 @@ function App() {
             newResults[5] = 'FAIL';
             console.error('API error:', err);
          }
-         // FindMy
-         try {
-            const oqcResponse = await fetch(
-               `${BACKEND_URL}/api/progressevents`,
-               {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ productionsn: crankSerial }),
-               }
-            );
-            if (oqcResponse.ok) {
-               const oqcData = await oqcResponse.json();
-               if (
-                  oqcData.events &&
-                  oqcData.events.some(
-                     ev => typeof ev === 'string' && ev.includes('FindMy PASS')
-                  )
-               ) {
-                  newResults[6] = 'PASS';
+         // FindMy (skip if crankSide indicates Drive Side)
+         if (String(crankSideValue) !== '1') {
+            try {
+               const oqcResponse = await fetch(
+                  `${BACKEND_URL}/api/progressevents`,
+                  {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ productionsn: crankSerial }),
+                  }
+               );
+               if (oqcResponse.ok) {
+                  const oqcData = await oqcResponse.json();
+                  if (
+                     oqcData.events &&
+                     oqcData.events.some(
+                        ev =>
+                           typeof ev === 'string' && ev.includes('FindMy PASS')
+                     )
+                  ) {
+                     newResults[6] = 'PASS';
+                  } else {
+                     newResults[6] = 'FAIL';
+                  }
                } else {
                   newResults[6] = 'FAIL';
                }
-            } else {
+            } catch (err) {
                newResults[6] = 'FAIL';
+               console.error('API error:', err);
             }
-         } catch (err) {
-            newResults[6] = 'FAIL';
-            console.error('API error:', err);
-         }
+         } // else leave newResults[6] as 'NOT RUN'
          setResults(newResults);
          // Move focus to Reset button
          setTimeout(() => {
@@ -254,6 +299,19 @@ function App() {
                marginBottom: '2rem',
             }}
          />
+         <div
+            style={{ marginBottom: '1rem', fontSize: '0.95rem', color: '#333' }}
+         >
+            <strong>Crank side:</strong>{' '}
+            {crankSide === null
+               ? 'Unknown'
+               : String(crankSide) === '0'
+               ? 'Non-Drive Side'
+               : String(crankSide) === '1'
+               ? 'Drive Side'
+               : String(crankSide)}
+         </div>
+
          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
                <tr>
@@ -283,7 +341,7 @@ function App() {
                      <td
                         style={{ border: '1px solid #ccc', padding: '0.5rem' }}
                      >
-                        {test.name}
+                        {idx === 2 ? `VM <= ${vmThresholdDisplay}` : test.name}
                      </td>
                      <td
                         style={{
@@ -294,7 +352,8 @@ function App() {
                                  ? '#b6f5b6'
                                  : results[idx] === 'FAIL'
                                  ? '#f5b6b6'
-                                 : results[idx] === 'NO DATA'
+                                 : results[idx] === 'NO DATA' ||
+                                   results[idx] === 'NOT RUN'
                                  ? '#e8e8e8'
                                  : 'inherit',
                            color:
@@ -302,11 +361,15 @@ function App() {
                                  ? '#1a4d1a'
                                  : results[idx] === 'FAIL'
                                  ? '#a41a1a'
-                                 : results[idx] === 'NO DATA'
+                                 : results[idx] === 'NO DATA' ||
+                                   results[idx] === 'NOT RUN'
                                  ? '#666666'
                                  : 'inherit',
                            fontWeight:
-                              results[idx] === 'PASS' || results[idx] === 'FAIL' || results[idx] === 'NO DATA'
+                              results[idx] === 'PASS' ||
+                              results[idx] === 'FAIL' ||
+                              results[idx] === 'NO DATA' ||
+                              results[idx] === 'NOT RUN'
                                  ? 'bold'
                                  : 'normal',
                            textAlign: 'center',
@@ -323,6 +386,7 @@ function App() {
             onClick={() => {
                setCrankSerial('');
                setResults(Array(tests.length).fill(''));
+               setCrankSide(null);
                if (inputRef.current) inputRef.current.focus();
             }}
             style={{
@@ -337,29 +401,36 @@ function App() {
          >
             Reset
          </button>
-           {/* Version and changelog box */}
-           <div
-              style={{
-                 marginTop: '2rem',
-                 padding: '1rem',
-                 border: '1px solid #ddd',
-                 borderRadius: 6,
-                 backgroundColor: '#fafafa',
-                 fontSize: '0.9rem',
-              }}
-           >
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                 <div>
-                    <strong>Version:</strong> {version || 'unknown'}
-                 </div>
-                 <div>
-                    <em>Changelog (excerpt)</em>
-                 </div>
-              </div>
-              <pre style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem', maxHeight: 200, overflow: 'auto' }}>
-                 {changelog || 'Changelog not available.'}
-              </pre>
-           </div>
+         {/* Version and changelog box */}
+         <div
+            style={{
+               marginTop: '2rem',
+               padding: '1rem',
+               border: '1px solid #ddd',
+               borderRadius: 6,
+               backgroundColor: '#fafafa',
+               fontSize: '0.9rem',
+            }}
+         >
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+               <div>
+                  <strong>Version:</strong> {version || 'unknown'}
+               </div>
+               <div>
+                  <em>Changelog (excerpt)</em>
+               </div>
+            </div>
+            <pre
+               style={{
+                  whiteSpace: 'pre-wrap',
+                  marginTop: '0.5rem',
+                  maxHeight: 200,
+                  overflow: 'auto',
+               }}
+            >
+               {changelog || 'Changelog not available.'}
+            </pre>
+         </div>
       </div>
    );
 }
