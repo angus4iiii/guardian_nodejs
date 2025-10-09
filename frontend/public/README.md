@@ -70,3 +70,5 @@ Angus Ho <angus.ho@4iiii.com>
 - Drive Side Detection and Testing Updates
 ### 0.1.2 - CORS
 - Add CORS support
+- New Percent Fails column
+- Run results uploaded to server

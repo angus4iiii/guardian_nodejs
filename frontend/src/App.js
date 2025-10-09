@@ -3,6 +3,7 @@ import pkg from '../package.json';
 import './App.css';
 
 const BACKEND_URL = 'http://localhost:3001';
+const VERSION = '0.0.1';
 
 function App() {
    const [crankSerial, setCrankSerial] = useState('');
@@ -270,6 +271,63 @@ function App() {
             }
          } // else leave newResults[6] as 'NOT RUN'
          setResults(newResults);
+         // Compute bitmask resultcode: set bit i (1<<i) when newResults[i] === 'FAIL'
+         try {
+            const resultcode = newResults.reduce((acc, val, idx) => {
+               return val === 'FAIL' ? acc | (1 << idx) : acc;
+            }, 0);
+
+            console.log('Computed resultcode bitmask:', resultcode);
+
+            // Map textual results to numeric codes: 0=PASS,1=FAIL,2=NO DATA,3=NOT RUN
+            const mapResult = r => {
+               if (r === 'PASS') return 0;
+               if (r === 'FAIL') return 1;
+               if (r === 'NO DATA') return 2;
+               if (r === 'NOT RUN') return 3;
+               return 2; // default to NO DATA
+            };
+
+            const payload = {
+               crankserialnumber: crankSerial,
+               factoryid: 'AH',
+               stationid: 'Labtop',
+               duration: 60,
+               swversion: version || 'unknown',
+               apiversion: VERSION,
+               resultcode,
+               podoqcresult: mapResult(newResults[0]),
+               autocalresult: mapResult(newResults[1]),
+               vmresult: mapResult(newResults[2]),
+               autopptresult: mapResult(newResults[3]),
+               temptestresult: mapResult(newResults[4]),
+               oqcresult: mapResult(newResults[5]),
+               findmyresult: mapResult(newResults[6]),
+            };
+
+            (async () => {
+               try {
+                  const saveResp = await fetch(
+                     `${BACKEND_URL}/api/devicecrankoqcrunresults`,
+                     {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                     }
+                  );
+                  if (!saveResp.ok) {
+                     console.warn('Failed to save OQC run results', saveResp.status);
+                  } else {
+                     const jr = await saveResp.json();
+                     console.log('Saved OQC run results:', jr);
+                  }
+               } catch (err) {
+                  console.error('Error saving OQC run results:', err);
+               }
+            })();
+         } catch (err) {
+            console.error('Error computing or saving resultcode:', err);
+         }
          // Move focus to Reset button
          setTimeout(() => {
             if (resetBtnRef.current) {
@@ -333,6 +391,15 @@ function App() {
                   >
                      Result
                   </th>
+                  <th
+                     style={{
+                        border: '1px solid #ccc',
+                        padding: '0.5rem',
+                        textAlign: 'left',
+                     }}
+                  >
+                     Percent Fails (last month)
+                  </th>
                </tr>
             </thead>
             <tbody>
@@ -376,6 +443,18 @@ function App() {
                         }}
                      >
                         {results[idx]}
+                     </td>
+                     <td
+                        style={{
+                           border: '1px solid #ccc',
+                           padding: '0.5rem',
+                           backgroundColor: '#e8e8e8',
+                           color: '#666666',
+                           fontWeight: 'bold',
+                           textAlign: 'center',
+                        }}
+                     >
+                        NO DATA
                      </td>
                   </tr>
                ))}

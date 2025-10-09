@@ -25,12 +25,7 @@ const accessControlAllowOrigin = [
 ];
 
 app.options('/*splat', (req, res) => {
-   const applied = applyCorsHeaders(req, res);
-   if (applied) {
-      console.log('CORS allowed for origin:', req.headers['origin']);
-   } else {
-      console.log('CORS origin not in allowlist, origin header was:', req.headers['origin']);
-   }
+   applyCorsHeaders(req, res);
 
    // MUST end the preflight response otherwise the browser will keep it pending
    res.status(204).send();
@@ -228,6 +223,66 @@ app.post('/api/progressevents', (req, res) => {
          res.json({ events: results.map(r => r.event) });
       }
    );
+});
+
+// Insert Device Crank OQC Run Results
+// Expects JSON body with: crankserialnumber, factoryid, stationid, duration, swversion, apiversion, resultcode
+app.post('/api/devicecrankoqcrunresults', (req, res) => {
+   const {
+      crankserialnumber,
+      factoryid,
+      stationid,
+      duration,
+      swversion,
+      apiversion,
+      resultcode,
+      podoqcresult,
+      autocalresult,
+      vmresult,
+      autopptresult,
+      temptestresult,
+      oqcresult,
+      findmyresult,
+   } = req.body || {};
+
+   // Basic validation
+   if (!crankserialnumber) {
+      return res.status(400).json({ error: 'Missing crankserialnumber' });
+   }
+   if (typeof resultcode === 'undefined' || resultcode === null) {
+      return res.status(400).json({ error: 'Missing resultcode' });
+   }
+
+   const insertSql = `INSERT INTO guardianrunresults (crankserialnumber, factoryid, stationid, duration, swversion, apiversion, resultcode, podoqcresult, autocalresult, vmresult, autopptresult, temptestresult, oqcresult, findmyresult, datecreated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+   const params = [
+      crankserialnumber,
+      factoryid || null,
+      stationid || null,
+      typeof duration !== 'undefined' ? duration : null,
+      swversion || null,
+      apiversion || null,
+      resultcode,
+      typeof podoqcresult !== 'undefined' ? podoqcresult : null,
+      typeof autocalresult !== 'undefined' ? autocalresult : null,
+      typeof vmresult !== 'undefined' ? vmresult : null,
+      typeof autopptresult !== 'undefined' ? autopptresult : null,
+      typeof temptestresult !== 'undefined' ? temptestresult : null,
+      typeof oqcresult !== 'undefined' ? oqcresult : null,
+      typeof findmyresult !== 'undefined' ? findmyresult : null,
+   ];
+
+   console.log('Insert devicecrankoqcrunresults called with body:', req.body);
+   console.log('Insert SQL:', insertSql);
+   console.log('Insert params:', params);
+   console.log('Per-test results:', { podoqcresult, autocalresult, vmresult, autopptresult, temptestresult, oqcresult, findmyresult });
+
+   dbSkynet.query(insertSql, params, (err, result) => {
+      if (err) {
+         console.error('Error inserting guardianrunresults:', err);
+         return res.status(500).json({ error: 'Database insert error', details: err.message });
+      }
+      return res.json({ insertId: result.insertId, affectedRows: result.affectedRows });
+   });
 });
 
 app.listen(PORT, () => {
