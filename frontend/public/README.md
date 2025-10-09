@@ -65,3 +65,8 @@ Angus Ho <angus.ho@4iiii.com>
 
 ### 0.1.0 - Initial release
 - Change Pod OQC to have No Data results instead of Fail
+### 0.1.1 - Drive Side Detection and Bugfixes
+- FindMy Fix
+- Drive Side Detection and Testing Updates
+### 0.1.2 - CORS
+- Add CORS support
