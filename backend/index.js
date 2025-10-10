@@ -6,6 +6,7 @@ const cors = require('cors');
 
 const app = express();
 app.use(express.json());
+
 // Centralized helper to apply CORS headers for both preflight and actual responses
 function applyCorsHeaders(req, res) {
    const reqOrigin = req.headers['origin'];
@@ -186,20 +187,24 @@ app.post('/api/temptest', (req, res) => {
 app.get('/api/crankside', (req, res) => {
    const productionsn = req.query.productionsn || 'A0S10B25|41|00493';
 
-   dbSkynet.query(
-      'SELECT side FROM crank_serials WHERE productionsn = ? ORDER BY id DESC LIMIT 1',
-      [productionsn],
-      (err, results) => {
-         if (err) {
-            console.error('Error querying crank_serials:', err);
-            return res.status(500).json({ error: 'Database error' });
-         }
+   try {
+      dbSkynet.query(
+         'SELECT side FROM crank_serials WHERE productionsn = ? ORDER BY id DESC LIMIT 1',
+         [productionsn],
+         (err, results) => {
+            if (err) {
+               console.error('Error querying crank_serials:', err);
+               return res.status(500).json({ error: 'Database error' });
+            }
 
-         const crankSide =
-            results && results.length > 0 ? results[0].side : null;
-         return res.json({ crankSide });
-      }
-   );
+            const crankSide = results && results.length > 0 ? results[0].side : null;
+            return res.json({ crankSide });
+         }
+      );
+   } catch (e) {
+      console.error('Exception while querying crank_serials:', e && e.message);
+      return res.status(500).json({ error: 'Database error' });
+   }
 });
 
 // Route for Progress Events

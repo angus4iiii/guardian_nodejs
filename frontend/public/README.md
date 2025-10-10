@@ -62,13 +62,18 @@ Specify your project license here.
 Angus Ho <angus.ho@4iiii.com>
 
 ## Changelog
+### 0.1.3 - Formatting and Ease of Use Changes
+- Single scan is required to enter a new crank serial number
 
-### 0.1.0 - Initial release
-- Change Pod OQC to have No Data results instead of Fail
-### 0.1.1 - Drive Side Detection and Bugfixes
-- FindMy Fix
-- Drive Side Detection and Testing Updates
 ### 0.1.2 - CORS
 - Add CORS support
 - New Percent Fails column
 - Run results uploaded to server
+
+### 0.1.1 - Drive Side Detection and Bugfixes
+- FindMy Fix
+- Drive Side Detection and Testing Updates
+
+### 0.1.0 - Initial release
+- Change Pod OQC to have No Data results instead of Fail
+
