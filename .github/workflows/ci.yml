@@ -36,11 +36,13 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y default-mysql-client
-
+          
+          # Debug info
           ps aux | grep -E 'mysqld|mysql' | grep -v grep
           lsof -nP -iTCP:3306 -sTCP:LISTEN || ss -ltnp | grep :3306 || netstat -ltnp 2>/dev/null | grep :3306 || true
           docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
           docker-compose ps --all 2>/dev/null || true
+          # ------
 
           for i in $(seq 1 30); do
             mysql -h 127.0.0.1 -P 32768 -uroot -prootpass -e 'SELECT 1' && break || sleep 2
@@ -60,7 +62,15 @@ jobs:
 
           # find container with mysql image
           docker ps --filter ancestor=mysql --format '{{.ID}} {{.Image}} {{.Names}}' || true
-          docker logs <container-id> --tail 200
+          # Find a running mysql container and print its logs if present
+          container_id=$(docker ps --filter ancestor=mysql --format '{{.ID}}' | head -n1 || true)
+          if [ -n "$container_id" ]; then
+            echo "Found mysql container: $container_id"
+            docker logs "$container_id" --tail 200 || true
+          else
+            echo "No mysql container found to tail logs"
+          fi
+          # ------
 
       - name: Create DB credential files for backend
         working-directory: ./backend
