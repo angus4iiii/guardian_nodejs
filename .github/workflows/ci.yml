@@ -169,7 +169,7 @@ jobs:
 
           INSERT INTO devicepodoqcdata (serialnumber, resultcode) VALUES
             ('A0S18B25|39|01368', '2'),
-            ('A1S9C24|47|00676', '2'),
+            ('A1S9C24|47|00676', '2');
 
           INSERT INTO devicetemperaturerunresults (crankserialnumber, resultcode) VALUES
             ('A1S18A25|40|02304', '0'),
