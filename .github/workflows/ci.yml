@@ -170,7 +170,7 @@ jobs:
             ('A1S9C24|47|00676', '2'),
             ('A0S18B25|34|00697', '0');          
 
-          INSERT INTO devicecalibrationrunresults (productionsn, resultcode, variationmetric) VALUES
+          INSERT INTO devicecalibrationrunresults (crankserialnumber, resultcode, variationmetric) VALUES
             ('A1S18A25|40|02304', '0', '0.5'),
             ('A0S18B25|39|01368', '1', '0.9'),
             ('A1S9C24|47|00676', '0', '0.73'),
