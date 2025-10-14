@@ -1,0 +1,151 @@
+name: CI (backend + MySQL + tests)
+
+on:
+  push:
+    branches: [ main, Angus/GUARD-3-Fix-unit-tests-and-upload-run-results-to-server ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-with-mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: testdb
+        ports:
+          - 3306/tcp
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Wait for MySQL to become available
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y default-mysql-client
+          for i in $(seq 1 30); do
+            mysql -h 127.0.0.1 -P 3306 -uroot -prootpass -e 'SELECT 1' && break || sleep 2
+          done
+
+      - name: Create DB credential files for backend
+        working-directory: ./backend
+        run: |
+          cat > db-creds-test.json <<'JSON'
+          {"host":"127.0.0.1","user":"root","password":"rootpass","database":"testdb","port":3306}
+          JSON
+          cat > db-creds-test-skynet.json <<'JSON'
+          {"host":"127.0.0.1","user":"root","password":"rootpass","database":"testdb","port":3306}
+          JSON
+
+      - name: Initialize minimal schema required by backend
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -prootpass testdb <<'SQL'
+          CREATE TABLE IF NOT EXISTS guardianrunresults (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            crankserialnumber VARCHAR(255),
+            factoryid VARCHAR(50),
+            stationid VARCHAR(50),
+            duration INT,
+            swversion VARCHAR(100),
+            apiversion VARCHAR(50),
+            resultcode INT,
+            podoqcresult INT,
+            autocalresult INT,
+            vmresult INT,
+            autopptresult INT,
+            temptestresult INT,
+            oqcresult INT,
+            findmyresult INT,
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS devicecalibrationrunresults (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            crankserialnumber VARCHAR(255),
+            resultcode VARCHAR(50),
+            variationmetric VARCHAR(50),
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS devicepressuretestvalues (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            crankserialnumber VARCHAR(255),
+            resultcode VARCHAR(50),
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS devicepodoqcdata (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            serialnumber VARCHAR(255),
+            resultcode VARCHAR(50),
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS devicecalibrationcrankinfo (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            calid INT,
+            crankserialnumber VARCHAR(255)
+          );
+
+          CREATE TABLE IF NOT EXISTS devicecalibrationng (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            calid INT,
+            serialnumber VARCHAR(255)
+          );
+
+          CREATE TABLE IF NOT EXISTS devicetemperaturerunresults (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            crankserialnumber VARCHAR(255),
+            resultcode VARCHAR(50),
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS crank_serials (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            productionsn VARCHAR(255),
+            side VARCHAR(10)
+          );
+
+          CREATE TABLE IF NOT EXISTS crank_progress_events (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            productionsn VARCHAR(255),
+            event TEXT
+          );
+          SQL
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Start backend
+        working-directory: ./backend
+        run: |
+          nohup node index.js &> backend.log &
+          # wait until backend responds
+          for i in $(seq 1 30); do
+            curl -sS http://localhost:3001/ || sleep 1 && break
+          done
+
+      - name: Run debug test runner
+        run: |
+          node ./debug-test.js
+
+      - name: Upload backend logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-log
+          path: backend/backend.log
