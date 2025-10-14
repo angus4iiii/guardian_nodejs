@@ -73,7 +73,8 @@ async function runExampleTestByIndex(indexOrId) {
   var mismatches = [];
   for (var i = 0; i < expectedArray.length; i++) {
     var exp = expectedArray[i];
-  var ok = (typeof exp !== 'undefined' && exp !== null) ? true : false;
+    var got = newResults[i];
+  var ok = (typeof exp !== 'undefined' && exp !== null && exp === got) ? true : false;
     if (!ok) {
       mismatches.push({ index: i, name: testNames[i], got: got, expected: exp });
     }

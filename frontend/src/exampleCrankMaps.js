@@ -39,7 +39,7 @@ const exampleCrankMaps = [
       vmresult: 0,
       autopptresult: 3,
       temptestresult: 1,
-      oqcresult: 3,
+      oqcresult: 0,
       findmyresult: 3,
     },
   },
