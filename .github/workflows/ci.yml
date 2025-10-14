@@ -183,7 +183,7 @@ jobs:
             ('3', 'FFFFFFFFFFFFFFFF'),
             ('4', 'AFC8ACB7AAC8F86D');  
 
-          INSERT INTO devicetemperaturerunresults (calid, crankserialnumber, resultcode) VALUES
+          INSERT INTO devicetemperaturerunresults (crankserialnumber, resultcode) VALUES
             ('A1S18A25|40|02304', '0'),
             ('A0S18B25|39|01368', '1'),
             ('A1S9C24|47|00676', '1'),
