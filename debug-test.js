@@ -9,6 +9,7 @@ const { runExampleTestByIndex } = require('./frontend/src/setupTests');
 
 async function runAllExamples() {
   try {
+    const summary = [];
     for (let i = 0; i < 4; i++) {
       // small delay between runs to avoid overwhelming the backend
       await new Promise(r => setTimeout(r, 250));
@@ -16,11 +17,24 @@ async function runAllExamples() {
       try {
         const results = await runExampleTestByIndex(i);
         console.log(`Example ${i + 1} results:`, results);
+        summary.push({ index: i, pass: !!results.pass, details: results });
       } catch (err) {
-        console.error(`Example ${i + 1} failed:`, err);
+        console.error(`Example ${i + 1} thrown:`, err);
+        summary.push({ index: i, pass: false, error: String(err) });
       }
     }
-    console.log('\nAll example tests complete.');
+
+    console.log('\nAll example tests complete. Summary:');
+    console.log(JSON.stringify(summary, null, 2));
+
+    const anyFailed = summary.some(s => !s.pass);
+    if (anyFailed) {
+      console.error('One or more example tests failed — exiting with code 1');
+      process.exitCode = 1;
+    } else {
+      console.log('All example tests passed.');
+      process.exitCode = 0;
+    }
   } catch (err) {
     console.error('Error running example tests:', err);
   }
