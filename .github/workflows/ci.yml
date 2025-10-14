@@ -157,19 +157,6 @@ jobs:
             event TEXT
           );
 
-          INSERT INTO crank_serials (productionsn, side) VALUES
-            ('A1S18A25|40|02304', '1'),
-            ('A0S18B25|39|01368', '0'),
-            ('A1S9C24|47|00676', '1'),
-            ('A0S18B25|34|00697', '0');
-
-
-          INSERT INTO devicepodoqcdata (productionsn, resultcode) VALUES
-            ('A1S18A25|40|02304', '0'),
-            ('A0S18B25|39|01368', '2'),
-            ('A1S9C24|47|00676', '2'),
-            ('A0S18B25|34|00697', '0');          
-
           INSERT INTO devicecalibrationrunresults (crankserialnumber, resultcode, variationmetric) VALUES
             ('A1S18A25|40|02304', '0', '0.5'),
             ('A0S18B25|39|01368', '1', '0.9'),
@@ -178,13 +165,25 @@ jobs:
 
           INSERT INTO devicepressuretestvalues (serialnumber, resultcode) VALUES
             ('A0S18B25|39|01368', '1'),
-            ('A0S18B25|34|00697', '1');   
+            ('A0S18B25|34|00697', '1'); 
+
+          INSERT INTO devicepodoqcdata (productionsn, resultcode) VALUES
+            ('A1S18A25|40|02304', '0'),
+            ('A0S18B25|39|01368', '2'),
+            ('A1S9C24|47|00676', '2'),
+            ('A0S18B25|34|00697', '0');          
 
           INSERT INTO devicetemperaturerunresults (crankserialnumber, resultcode) VALUES
             ('A1S18A25|40|02304', '0'),
             ('A0S18B25|39|01368', '1'),
             ('A1S9C24|47|00676', '1'),
             ('A0S18B25|34|00697', '1');  
+
+          INSERT INTO crank_serials (productionsn, side) VALUES
+            ('A1S18A25|40|02304', '1'),
+            ('A0S18B25|39|01368', '0'),
+            ('A1S9C24|47|00676', '1'),
+            ('A0S18B25|34|00697', '0');
 
           INSERT INTO crank_progress_events (productionsn, event) VALUES
             ('A1S18A25|40|02304', 'OQC PASS'),
