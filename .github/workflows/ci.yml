@@ -30,7 +30,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Wait for MySQL to become available
         run: |
@@ -160,7 +160,10 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./backend
-        run: npm ci
+        run: |
+          # Ensure a clean install: remove stale node_modules and lockfile that may be incompatible with runner npm
+          rm -rf node_modules package-lock.json || true
+          npm install --no-audit --no-fund
 
       - name: Start backend
         working-directory: ./backend
