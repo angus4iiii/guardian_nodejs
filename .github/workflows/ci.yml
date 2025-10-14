@@ -107,7 +107,7 @@ jobs:
           CREATE TABLE IF NOT EXISTS devicecalibrationrunresults (
             id INT AUTO_INCREMENT PRIMARY KEY,
             crankserialnumber VARCHAR(255),
-            resultcodes VARCHAR(50),
+            resultcode VARCHAR(50),
             variationmetric VARCHAR(50),
             datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
           );
@@ -122,7 +122,7 @@ jobs:
           CREATE TABLE IF NOT EXISTS devicepodoqcdata (
             id INT AUTO_INCREMENT PRIMARY KEY,
             serialnumber VARCHAR(255),
-            resultcodes VARCHAR(50),
+            resultcode VARCHAR(50),
             datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
           );
 
@@ -157,7 +157,7 @@ jobs:
             event TEXT
           );
 
-          INSERT INTO devicecalibrationrunresults (crankserialnumber, resultcodes, variationmetric) VALUES
+          INSERT INTO devicecalibrationrunresults (crankserialnumber, resultcode, variationmetric) VALUES
             ('A1S18A25|40|02304', '0', '0.5'),
             ('A0S18B25|39|01368', '1', '0.9'),
             ('A1S9C24|47|00676', '0', '0.73'),
@@ -167,7 +167,7 @@ jobs:
             ('A0S18B25|39|01368', '1'),
             ('A0S18B25|34|00697', '1'); 
 
-          INSERT INTO devicepodoqcdata (serialnumber, resultcodes) VALUES
+          INSERT INTO devicepodoqcdata (serialnumber, resultcode) VALUES
             ('A1S18A25|40|02304', '0'),
             ('A0S18B25|34|00697', '0');
 
