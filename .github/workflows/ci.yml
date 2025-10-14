@@ -168,10 +168,22 @@ jobs:
             ('A0S18B25|34|00697', '1'); 
 
           INSERT INTO devicepodoqcdata (serialnumber, resultcode) VALUES
-            ('A1S18A25|40|02304', '0'),
-            ('A0S18B25|34|00697', '0');
+            ('3C3780E075FBA9E6', '0'),
+            ('AFC8ACB7AAC8F86D', '0');
 
-          INSERT INTO devicetemperaturerunresults (crankserialnumber, resultcode) VALUES
+          INSERT INTO devicecalibrationcrankinfo (calid, crankserialnumber) VALUES
+            ('1', 'A1S18A25|40|02304'),
+            ('2', 'A0S18B25|39|01368'),
+            ('3', 'A1S9C24|47|00676'),
+            ('4', 'A0S18B25|34|00697');  
+
+          INSERT INTO devicecalibrationng (calid, serialnumber) VALUES
+            ('1', '3C3780E075FBA9E6'),
+            ('2', '2DBD40AA49179C0F'),
+            ('3', 'FFFFFFFFFFFFFFFF'),
+            ('4', 'AFC8ACB7AAC8F86D');  
+
+          INSERT INTO devicetemperaturerunresults (calid, crankserialnumber, resultcode) VALUES
             ('A1S18A25|40|02304', '0'),
             ('A0S18B25|39|01368', '1'),
             ('A1S9C24|47|00676', '1'),
