@@ -36,9 +36,31 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y default-mysql-client
+
+          ps aux | grep -E 'mysqld|mysql' | grep -v grep
+          lsof -nP -iTCP:3306 -sTCP:LISTEN || ss -ltnp | grep :3306 || netstat -ltnp 2>/dev/null | grep :3306 || true
+          docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
+          docker-compose ps --all 2>/dev/null || true
+
           for i in $(seq 1 30); do
             mysql -h 127.0.0.1 -P 3306 -uroot -prootpass -e 'SELECT 1' && break || sleep 2
           done
+
+          # Testing
+          # If systemd-managed
+          systemctl status mysql.service mysqld.service || true
+
+          # MySQL version and variables (if server reachable via socket)
+          mysql --protocol=SOCKET -uroot -prootpass -e "SHOW VARIABLES WHERE Variable_name IN ('port','bind_address');" 2>/dev/null || true
+
+          # show default socket file
+          mysqladmin -uroot -prootpass variables 2>/dev/null | grep socket || true
+
+          sudo tail -n 200 /var/log/mysql/error.log /var/log/mysqld.log /var/log/mysql/mysql.log 2>/dev/null || true
+
+          # find container with mysql image
+          docker ps --filter ancestor=mysql --format '{{.ID}} {{.Image}} {{.Names}}' || true
+          docker logs <container-id> --tail 200
 
       - name: Create DB credential files for backend
         working-directory: ./backend
