@@ -24,9 +24,6 @@ async function runAllExamples() {
       }
     }
 
-    console.log('\nAll example tests complete. Summary:');
-    console.log(JSON.stringify(summary, null, 2));
-
     const anyFailed = summary.some(s => !s.pass);
     if (anyFailed) {
       console.error('One or more example tests failed — exiting with code 1');

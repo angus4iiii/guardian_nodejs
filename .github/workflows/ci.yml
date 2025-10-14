@@ -156,6 +156,43 @@ jobs:
             productionsn VARCHAR(255),
             event TEXT
           );
+
+          INSERT INTO crank_serials (productionsn, side) VALUES
+            ('A1S18A25|40|02304', '1'),
+            ('A0S18B25|39|01368', '0'),
+            ('A1S9C24|47|00676', '1'),
+            ('A0S18B25|34|00697', '0');
+
+
+          INSERT INTO devicepodoqcdata (productionsn, resultcode) VALUES
+            ('A1S18A25|40|02304', '0'),
+            ('A0S18B25|39|01368', '2'),
+            ('A1S9C24|47|00676', '2'),
+            ('A0S18B25|34|00697', '0');          
+
+          INSERT INTO devicecalibrationrunresults (productionsn, resultcode, variationmetric) VALUES
+            ('A1S18A25|40|02304', '0', '0.5'),
+            ('A0S18B25|39|01368', '1', '0.9'),
+            ('A1S9C24|47|00676', '0', '0.73'),
+            ('A0S18B25|34|00697', '0', '0.5');
+
+          INSERT INTO devicepressuretestvalues (productionsn, resultcode) VALUES
+            ('A0S18B25|39|01368', '1'),
+            ('A0S18B25|34|00697', '1');   
+
+          INSERT INTO devicetemperaturerunresults (productionsn, resultcode) VALUES
+            ('A1S18A25|40|02304', '0'),
+            ('A0S18B25|39|01368', '1'),
+            ('A1S9C24|47|00676', '1'),
+            ('A0S18B25|34|00697', '1');  
+
+          INSERT INTO crank_progress_events (productionsn, resultcode) VALUES
+            ('A1S18A25|40|02304', 'OQC PASS'),
+            ('A0S18B25|39|01368', 'OQC PASS'),
+            ('A1S9C24|47|00676', 'OQC PASS'),
+            ('A0S18B25|39|01368', 'FindMy PASS'),
+            ('A0S18B25|34|00697', 'FindMy PASS');  
+
           SQL
 
       - name: Install backend dependencies
