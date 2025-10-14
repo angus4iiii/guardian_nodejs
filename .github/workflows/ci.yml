@@ -114,7 +114,7 @@ jobs:
 
           CREATE TABLE IF NOT EXISTS devicepressuretestvalues (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            crankserialnumber VARCHAR(255),
+            serialnumber VARCHAR(255),
             resultcode VARCHAR(50),
             datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
           );
@@ -176,17 +176,17 @@ jobs:
             ('A1S9C24|47|00676', '0', '0.73'),
             ('A0S18B25|34|00697', '0', '0.5');
 
-          INSERT INTO devicepressuretestvalues (productionsn, resultcode) VALUES
+          INSERT INTO devicepressuretestvalues (serialnumber, resultcode) VALUES
             ('A0S18B25|39|01368', '1'),
             ('A0S18B25|34|00697', '1');   
 
-          INSERT INTO devicetemperaturerunresults (productionsn, resultcode) VALUES
+          INSERT INTO devicetemperaturerunresults (crankserialnumber, resultcode) VALUES
             ('A1S18A25|40|02304', '0'),
             ('A0S18B25|39|01368', '1'),
             ('A1S9C24|47|00676', '1'),
             ('A0S18B25|34|00697', '1');  
 
-          INSERT INTO crank_progress_events (productionsn, resultcode) VALUES
+          INSERT INTO crank_progress_events (productionsn, event) VALUES
             ('A1S18A25|40|02304', 'OQC PASS'),
             ('A0S18B25|39|01368', 'OQC PASS'),
             ('A1S9C24|47|00676', 'OQC PASS'),
