@@ -1,0 +1,231 @@
+name: CI (backend + MySQL + tests)
+
+on:
+  push:
+    branches: [ main, Angus/GUARD-3-Fix-unit-tests-and-upload-run-results-to-server ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-with-mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: testdb
+        ports:
+          - 3306/tcp
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Wait for MySQL to become available
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y default-mysql-client
+          
+          # Debug info
+          ps aux | grep -E 'mysqld|mysql' | grep -v grep
+          lsof -nP -iTCP:3306 -sTCP:LISTEN || ss -ltnp | grep :3306 || netstat -ltnp 2>/dev/null | grep :3306 || true
+          docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'
+          docker-compose ps --all 2>/dev/null || true
+          # ------
+
+          for i in $(seq 1 30); do
+            mysql -h 127.0.0.1 -P 32768 -uroot -prootpass -e 'SELECT 1' && break || sleep 2
+          done
+
+          # Testing
+          # If systemd-managed
+          systemctl status mysql.service mysqld.service || true
+
+          # MySQL version and variables (if server reachable via socket)
+          mysql --protocol=SOCKET -uroot -prootpass -e "SHOW VARIABLES WHERE Variable_name IN ('port','bind_address');" 2>/dev/null || true
+
+          # show default socket file
+          mysqladmin -uroot -prootpass variables 2>/dev/null | grep socket || true
+
+          sudo tail -n 200 /var/log/mysql/error.log /var/log/mysqld.log /var/log/mysql/mysql.log 2>/dev/null || true
+
+          # find container with mysql image
+          docker ps --filter ancestor=mysql --format '{{.ID}} {{.Image}} {{.Names}}' || true
+          # Find a running mysql container and print its logs if present
+          container_id=$(docker ps --filter ancestor=mysql --format '{{.ID}}' | head -n1 || true)
+          if [ -n "$container_id" ]; then
+            echo "Found mysql container: $container_id"
+            docker logs "$container_id" --tail 200 || true
+          else
+            echo "No mysql container found to tail logs"
+          fi
+          # ------
+
+      - name: Create DB credential files for backend
+        working-directory: ./backend
+        run: |
+          cat > db-creds-test.json <<'JSON'
+          {"host":"127.0.0.1","user":"root","password":"rootpass","database":"testdb","port":32768}
+          JSON
+          cat > db-creds-test-skynet.json <<'JSON'
+          {"host":"127.0.0.1","user":"root","password":"rootpass","database":"testdb","port":32768}
+          JSON
+
+      - name: Initialize minimal schema required by backend
+        run: |
+          mysql -h 127.0.0.1 -P 32768 -uroot -prootpass testdb <<'SQL'
+          CREATE TABLE IF NOT EXISTS guardianrunresults (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            crankserialnumber VARCHAR(255),
+            factoryid VARCHAR(50),
+            stationid VARCHAR(50),
+            duration INT,
+            swversion VARCHAR(100),
+            apiversion VARCHAR(50),
+            resultcode INT,
+            podoqcresult INT,
+            autocalresult INT,
+            vmresult INT,
+            autopptresult INT,
+            temptestresult INT,
+            oqcresult INT,
+            findmyresult INT,
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS devicecalibrationrunresults (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            crankserialnumber VARCHAR(255),
+            resultcode VARCHAR(50),
+            variationmetric VARCHAR(50),
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS devicepressuretestvalues (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            serialnumber VARCHAR(255),
+            resultcode VARCHAR(50),
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS devicepodoqcdata (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            serialnumber VARCHAR(255),
+            resultcode VARCHAR(50),
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS devicecalibrationcrankinfo (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            calid INT,
+            crankserialnumber VARCHAR(255)
+          );
+
+          CREATE TABLE IF NOT EXISTS devicecalibrationng (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            calid INT,
+            serialnumber VARCHAR(255)
+          );
+
+          CREATE TABLE IF NOT EXISTS devicetemperaturerunresults (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            crankserialnumber VARCHAR(255),
+            resultcode VARCHAR(50),
+            datecreated DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+
+          CREATE TABLE IF NOT EXISTS crank_serials (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            productionsn VARCHAR(255),
+            side VARCHAR(10)
+          );
+
+          CREATE TABLE IF NOT EXISTS crank_progress_events (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            productionsn VARCHAR(255),
+            event TEXT
+          );
+
+          INSERT INTO devicecalibrationrunresults (crankserialnumber, resultcode, variationmetric) VALUES
+            ('A1S18A25|40|02304', '0', '0.5'),
+            ('A0S18B25|39|01368', '1', '0.9'),
+            ('A1S9C24|47|00676', '0', '0.73'),
+            ('A0S18B25|34|00697', '0', '0.5');
+
+          INSERT INTO devicepressuretestvalues (serialnumber, resultcode) VALUES
+            ('A0S18B25|39|01368', '1'),
+            ('A0S18B25|34|00697', '1'); 
+
+          INSERT INTO devicepodoqcdata (serialnumber, resultcode) VALUES
+            ('3C3780E075FBA9E6', '0'),
+            ('AFC8ACB7AAC8F86D', '0');
+
+          INSERT INTO devicecalibrationcrankinfo (calid, crankserialnumber) VALUES
+            ('1', 'A1S18A25|40|02304'),
+            ('2', 'A0S18B25|39|01368'),
+            ('3', 'A1S9C24|47|00676'),
+            ('4', 'A0S18B25|34|00697');  
+
+          INSERT INTO devicecalibrationng (calid, serialnumber) VALUES
+            ('1', '3C3780E075FBA9E6'),
+            ('2', '2DBD40AA49179C0F'),
+            ('3', 'FFFFFFFFFFFFFFFF'),
+            ('4', 'AFC8ACB7AAC8F86D');  
+
+          INSERT INTO devicetemperaturerunresults (crankserialnumber, resultcode) VALUES
+            ('A1S18A25|40|02304', '0'),
+            ('A0S18B25|39|01368', '1'),
+            ('A1S9C24|47|00676', '1'),
+            ('A0S18B25|34|00697', '1');  
+
+          INSERT INTO crank_serials (productionsn, side) VALUES
+            ('A1S18A25|40|02304', '1'),
+            ('A0S18B25|39|01368', '0'),
+            ('A1S9C24|47|00676', '1'),
+            ('A0S18B25|34|00697', '0');
+
+          INSERT INTO crank_progress_events (productionsn, event) VALUES
+            ('A1S18A25|40|02304', 'OQC PASS'),
+            ('A0S18B25|39|01368', 'OQC PASS'),
+            ('A1S9C24|47|00676', 'OQC PASS'),
+            ('A0S18B25|39|01368', 'FindMy PASS');  
+
+          SQL
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: |
+          # Ensure a clean install: remove stale node_modules and lockfile that may be incompatible with runner npm
+          rm -rf node_modules package-lock.json || true
+          npm install --no-audit --no-fund
+
+      - name: Start backend
+        working-directory: ./backend
+        run: |
+          nohup node index.js &> backend.log &
+          # wait until backend responds
+          for i in $(seq 1 30); do
+            curl -sS http://localhost:3001/ || sleep 1 && break
+          done
+
+      - name: Run debug test runner
+        run: |
+          node ./debug-test.js
+
+      - name: Upload backend logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-log
+          path: backend/backend.log

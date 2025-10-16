@@ -2,18 +2,46 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch Backend (node)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/index.js",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "/Users/angusho/.nvm/versions/node/v20.10.0/bin/node",
+      "console": "integratedTerminal",
+      "outputCapture": "std",
+      "internalConsoleOptions": "neverOpen",
+      "env": { "NODE_ENV": "development" }
+   },
+   {
       "name": "Run Guardian Unit Tests",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/debug-test.js",
-      "env": {
-        "NODE_ENV": "development"
-      },
+      "env": { "NODE_ENV": "development" },
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"],
       "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "/Users/angusho/.nvm/versions/node/v20.10.0/bin/node",
       "runtimeArgs": ["--inspect-brk"],
       "stopOnEntry": false
+    },
+    {
+      "name": "Run Debug Tests (node)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/debug-test.js",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "outputCapture": "std",
+      "internalConsoleOptions": "neverOpen",
+      "env": { "NODE_ENV": "development" }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Backend + Debug Tests",
+      "configurations": ["Launch Backend (node)", "Run Guardian Unit Tests"]
     }
   ]
 }

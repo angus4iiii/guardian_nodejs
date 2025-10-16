@@ -1,74 +1,43 @@
-// Debug entry point for testBackendWithRandomSerials
-// Run this file to test the backend with random serial numbers
+// Debug entry point that runs the new tests from frontend/setupTests.js
+// This script runs the example tests (the array in frontend/src/exampleCrankMaps.js)
 
-// Use Node.js built-in http module for HTTP requests (compatible with older Node versions)
-const http = require('http');
+console.log('Starting debug test runner');
+console.log('Make sure the backend server is running on http://localhost:3001');
 
-const BACKEND_URL = 'http://localhost:3001';
+// Import the test helpers we added to the frontend test utilities
+const { runExampleTestByIndex } = require('./frontend/src/setupTests');
 
-// Create a Node.js compatible version of the test function
-function testBackendWithRandomSerials() {
-  console.log('Testing backend with random serials...');
-  
-  for (let i = 0; i < 10; i++) {
-    const crankSerial = 'TEST' + Math.floor(Math.random() * 1000000);
-    
-    // Create HTTP request options
-    const postData = JSON.stringify({ crankSerial });
-    const options = {
-      hostname: 'localhost',
-      port: 3001,
-      path: '/api/podoqc',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(postData)
+async function runAllExamples() {
+  try {
+    const summary = [];
+    for (let i = 0; i < 4; i++) {
+      // small delay between runs to avoid overwhelming the backend
+      await new Promise(r => setTimeout(r, 250));
+      console.log(`\n=== Running example ${i + 1} ===`);
+      try {
+        const results = await runExampleTestByIndex(i);
+        console.log(`Example ${i + 1} results:`, results);
+        summary.push({ index: i, pass: !!results.pass, details: results });
+      } catch (err) {
+        console.error(`Example ${i + 1} thrown:`, err);
+        summary.push({ index: i, pass: false, error: String(err) });
       }
-    };
-    
-    // Make the HTTP request
-    const req = http.request(options, (res) => {
-      let data = '';
-      
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      
-      res.on('end', () => {
-        try {
-          const jsonData = JSON.parse(data);
-          console.log(`crankSerial: ${crankSerial}`, jsonData);
-        } catch (err) {
-          console.error(`crankSerial: ${crankSerial} - Parse error:`, err.message);
-          console.error(`Raw response: ${data}`);
-        }
-      });
-    });
-    
-    req.on('error', (err) => {
-      console.error(`crankSerial: ${crankSerial} - Request error:`, err.message);
-    });
-    
-    // Write data to request body
-    req.write(postData);
-    req.end();
+    }
+
+    const anyFailed = summary.some(s => !s.pass);
+    if (anyFailed) {
+      console.error('One or more example tests failed — exiting with code 1');
+      process.exitCode = 1;
+    } else {
+      console.log('All example tests passed.');
+      process.exitCode = 0;
+    }
+  } catch (err) {
+    console.error('Error running example tests:', err);
   }
 }
 
-console.log('Starting testBackendWithRandomSerials...');
-console.log('Make sure the backend server is running on http://localhost:3001');
-
-// Add a small delay to ensure the backend is ready
+// Give environment a second to settle then run
 setTimeout(() => {
-  try {
-    testBackendWithRandomSerials();
-    console.log('Test function called successfully. Check the console for API responses.');
-  } catch (error) {
-    console.error('Error calling testBackendWithRandomSerials:', error);
-  }
+  runAllExamples();
 }, 1000);
-
-// Keep the process alive to see all responses
-setTimeout(() => {
-  console.log('Debug session complete. Press Ctrl+C to exit or set breakpoints to debug further.');
-}, 5000);
