@@ -1,6 +1,25 @@
 const BACKEND_URL =
    process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
 
+// Read version from package.json (Node.js) or use fallback (browser)
+let version = '1.0.0'; // fallback version
+try {
+   if (typeof require !== 'undefined' && typeof process !== 'undefined' && process.versions && process.versions.node) {
+      // Node.js environment - use dynamic requires to avoid webpack bundling
+      const fs = eval('require')('fs');
+      const path = eval('require')('path');
+      const pkgPath = path.join(__dirname, '..', '..', 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      version = pkg.version;
+   } else {
+      // Browser environment - use process.env.REACT_APP_VERSION or fallback
+      version = process.env.REACT_APP_VERSION || '1.0.0';
+   }
+} catch (err) {
+   // Fallback if reading package.json fails
+   version = '1.0.0';
+}
+
 /**
  * Run the full sequence of backend calls for a crank serial and return
  * numeric test results plus crankSide.
@@ -186,6 +205,43 @@ async function runSequence(crankSerial) {
       } catch (err) {
          newResults[6] = 1;
       }
+   }
+
+   // Upload results to backend
+   try {
+      const uploadPayload = {
+         crankserialnumber: crankSerial,
+         factoryid: 'AH',
+         stationid: 'Labtop',
+         duration: 60,
+         swversion: version,
+         apiversion: '1.2.3',
+         resultcode: newResults.reduce((acc, val, idx) => {
+            return val === 1 ? acc | (1 << idx) : acc;
+         }, 0),
+         podoqcresult: newResults[0],
+         autocalresult: newResults[1],
+         vmresult: newResults[2],
+         autopptresult: newResults[3],
+         temptestresult: newResults[4],
+         oqcresult: newResults[5],
+         findmyresult: newResults[6],
+      };
+
+      const uploadResp = await fetch(`${BACKEND_URL}/api/devicecrankoqcrunresults`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify(uploadPayload),
+      });
+
+      if (uploadResp.ok) {
+         const uploadResult = await uploadResp.json();
+         console.log('Results uploaded successfully:', uploadResult);
+      } else {
+         console.error('Failed to upload results:', uploadResp.status, uploadResp.statusText);
+      }
+   } catch (err) {
+      console.error('Error uploading results:', err);
    }
 
    return { numericResults: newResults, crankSide: crankSideValue };
