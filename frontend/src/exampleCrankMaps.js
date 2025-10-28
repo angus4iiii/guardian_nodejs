@@ -57,6 +57,6 @@ const exampleCrankMaps = [
       findmyresult: 1,
     },
   },
-];
+]
 
-module.exports = { exampleCrankMaps };
+module.exports = { exampleCrankMaps }

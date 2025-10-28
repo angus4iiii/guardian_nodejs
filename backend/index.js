@@ -276,11 +276,6 @@ app.post('/api/devicecrankoqcrunresults', (req, res) => {
       typeof findmyresult !== 'undefined' ? findmyresult : null,
    ];
 
-   console.log('Insert devicecrankoqcrunresults called with body:', req.body);
-   console.log('Insert SQL:', insertSql);
-   console.log('Insert params:', params);
-   console.log('Per-test results:', { podoqcresult, autocalresult, vmresult, autopptresult, temptestresult, oqcresult, findmyresult });
-
    dbSkynet.query(insertSql, params, (err, result) => {
       if (err) {
          console.error('Error inserting guardianrunresults:', err);
