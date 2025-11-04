@@ -106,27 +106,24 @@ async function runSequence(crankSerial) {
     newResults[2] = 1
   }
 
-  // Auto PPT (skip if drive side)
-  if (String(crankSideValue) !== '1') {
-    try {
-      const pptResponse = await fetch(`${BACKEND_URL}/api/autoppt`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ crankSerial }),
-      })
-      if (pptResponse.ok) {
-        const pptData = await pptResponse.json()
-        if (pptData.resultcodes && pptData.resultcodes.length > 0) {
-          newResults[3] = pptData.resultcodes[0] === 0 ? 0 : 1
-        } else {
-          newResults[3] = 1
-        }
+  try {
+    const pptResponse = await fetch(`${BACKEND_URL}/api/autoppt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ crankSerial }),
+    })
+    if (pptResponse.ok) {
+      const pptData = await pptResponse.json()
+      if (pptData.resultcodes && pptData.resultcodes.length > 0) {
+        newResults[3] = pptData.resultcodes[0] === 0 ? 0 : 1
       } else {
         newResults[3] = 1
       }
-    } catch (err) {
+    } else {
       newResults[3] = 1
     }
+  } catch (err) {
+    newResults[3] = 1
   }
 
   // Temp Test
