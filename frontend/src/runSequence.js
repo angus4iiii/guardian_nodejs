@@ -147,20 +147,17 @@ async function runSequence(crankSerial) {
     newResults[4] = 1
   }
 
-  // OQC
+  // OQC via dedicated endpoint
   try {
-    const oqcResponse = await fetch(`${BACKEND_URL}/api/progressevents`, {
+    const oqcResponse = await fetch(`${BACKEND_URL}/api/oqcstatus`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productionsn: crankSerial }),
+      body: JSON.stringify({ crankSerial }),
     })
     if (oqcResponse.ok) {
       const oqcData = await oqcResponse.json()
-      if (
-        oqcData.events &&
-        oqcData.events.some((ev) => typeof ev === 'string' && ev.includes('OQC PASS'))
-      ) {
-        newResults[5] = 0
+      if (oqcData.resultcodes && oqcData.resultcodes.length > 0) {
+        newResults[5] = oqcData.resultcodes[0] === 0 ? 0 : 1
       } else {
         newResults[5] = 1
       }
