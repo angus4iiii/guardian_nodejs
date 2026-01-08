@@ -182,6 +182,34 @@ app.post('/api/temptest', (req, res) => {
    );
 });
 
+// Route for OQC Status via joined tables
+// Expects { crankSerial } and returns { resultcodes: [0|1] } where 0=PASS, 1=FAIL
+app.post('/api/oqcstatus', (req, res) => {
+   const { crankSerial } = req.body;
+   if (!crankSerial) {
+      return res.status(400).json({ error: 'Missing crankSerial' });
+   }
+   const sql = `SELECT oq.oqcstatus
+                FROM deviceoqctestinfo oq
+                INNER JOIN devicecalibrationng ng ON ng.serialnumber = oq.serialnumber
+                INNER JOIN devicecalibrationcrankinfo c ON c.calid = ng.calid
+                WHERE c.crankserialnumber = ?
+                ORDER BY oq.datecreated DESC
+                LIMIT 1`;
+   dbFrankfurt.query(sql, [crankSerial], (err, results) => {
+      if (err) {
+         console.error('DB query error (oqcstatus):', err);
+         return res.status(500).json({ error: 'Database error' });
+      }
+      if (!results || results.length === 0) {
+         return res.json({ resultcodes: [] });
+      }
+      const status = results[0].oqcstatus;
+      const code = String(status).toUpperCase() === 'PASS' ? 0 : 1;
+      return res.json({ resultcodes: [code] });
+   });
+});
+
 // New endpoint to return crankSide for a given productionsn
 // Accepts query param ?productionsn= or uses a default example if not provided
 app.get('/api/crankside', (req, res) => {
@@ -275,11 +303,6 @@ app.post('/api/devicecrankoqcrunresults', (req, res) => {
       typeof oqcresult !== 'undefined' ? oqcresult : null,
       typeof findmyresult !== 'undefined' ? findmyresult : null,
    ];
-
-   console.log('Insert devicecrankoqcrunresults called with body:', req.body);
-   console.log('Insert SQL:', insertSql);
-   console.log('Insert params:', params);
-   console.log('Per-test results:', { podoqcresult, autocalresult, vmresult, autopptresult, temptestresult, oqcresult, findmyresult });
 
    dbSkynet.query(insertSql, params, (err, result) => {
       if (err) {
