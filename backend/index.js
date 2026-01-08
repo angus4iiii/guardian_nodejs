@@ -54,37 +54,50 @@ const dbCredsFrankfurt = JSON.parse(
 const credsSkynetPath = path.join(__dirname, 'db-creds-test-skynet.json');
 const dbCredsSkynet = JSON.parse(fs.readFileSync(credsSkynetPath, 'utf8'));
 
-const dbFrankfurt = mysql.createConnection({
+const dbFrankfurt = mysql.createPool({
    host: dbCredsFrankfurt.host,
    user: dbCredsFrankfurt.user,
    password: dbCredsFrankfurt.password,
    database: dbCredsFrankfurt.database,
    port: dbCredsFrankfurt.port,
+   waitForConnections: true,
+   connectionLimit: 10,
+   queueLimit: 0,
 });
 
-const dbSkynet = mysql.createConnection({
+const dbSkynet = mysql.createPool({
    host: dbCredsSkynet.host,
    user: dbCredsSkynet.user,
    password: dbCredsSkynet.password,
    database: dbCredsSkynet.database,
    port: dbCredsSkynet.port,
+   waitForConnections: true,
+   connectionLimit: 10,
+   queueLimit: 0,
 });
 
-dbFrankfurt.connect(err => {
-   if (err) {
-      console.error('Error connecting to frankfurtdb:', err);
-   } else {
-      console.log('Connected to frankfurtdb');
-   }
-});
+// Test pool connectivity on startup (optional; enable by setting DB_STARTUP_CHECK=1)
+if (process.env.DB_STARTUP_CHECK === '1') {
+   dbFrankfurt.getConnection((err, connection) => {
+      if (err) {
+         console.error('Error getting connection from frankfurtdb pool:', err);
+      } else {
+         console.log('Connected to frankfurtdb pool');
+         connection.release();
+      }
+   });
 
-dbSkynet.connect(err => {
-   if (err) {
-      console.error('Error connecting to skynet3:', err);
-   } else {
-      console.log('Connected to skynet3');
-   }
-});
+   dbSkynet.getConnection((err, connection) => {
+      if (err) {
+         console.error('Error getting connection from skynet3 pool:', err);
+      } else {
+         console.log('Connected to skynet3 pool');
+         connection.release();
+      }
+   });
+} else {
+   console.log('DB startup connectivity check disabled. Set DB_STARTUP_CHECK=1 to enable.');
+}
 
 // Route for Device Calibration Results
 app.post('/api/autocal', (req, res) => {
@@ -316,3 +329,18 @@ app.post('/api/devicecrankoqcrunresults', (req, res) => {
 app.listen(PORT, () => {
    console.log(`Backend server listening on port ${PORT}`);
 });
+
+// Graceful shutdown: close pools on SIGINT/SIGTERM
+function shutdown() {
+   console.log('Shutting down server, closing MySQL pools...');
+   dbFrankfurt.end(err => {
+      if (err) console.error('Error closing frankfurtdb pool:', err);
+   });
+   dbSkynet.end(err => {
+      if (err) console.error('Error closing skynet3 pool:', err);
+   });
+   process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

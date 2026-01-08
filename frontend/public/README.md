@@ -62,6 +62,8 @@ Specify your project license here.
 Angus Ho <angus.ho@4iiii.com>
 
 ## Changelog
+### 0.1.5 - Change Backend to Use Connection Pools
+- Change backend to use connection pools to the database instead of direct connections
 ### 0.1.4 - Enable Drive Side AutoPPT Check
 - Enable Drive Side AutoPPT Check after ECO completed
 
