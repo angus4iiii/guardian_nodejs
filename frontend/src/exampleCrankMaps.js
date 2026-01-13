@@ -9,7 +9,7 @@ const exampleCrankMaps = [
       podoqcresult: 0,
       autocalresult: 0,
       vmresult: 0,
-      autopptresult: 3,
+      autopptresult: 1,
       temptestresult: 0,
       oqcresult: 0,
       findmyresult: 3,
@@ -37,7 +37,7 @@ const exampleCrankMaps = [
       podoqcresult: 2,
       autocalresult: 0,
       vmresult: 0,
-      autopptresult: 3,
+      autopptresult: 1,
       temptestresult: 1,
       oqcresult: 0,
       findmyresult: 3,
@@ -48,7 +48,7 @@ const exampleCrankMaps = [
     crankserial: 'A0S18B25|34|00697',
     description: 'Non Drive Side, August gauges',
     expected: {
-      podoqcresult: 0,
+      podoqcresult: 2,
       autocalresult: 0,
       vmresult: 0,
       autopptresult: 1,
@@ -57,6 +57,6 @@ const exampleCrankMaps = [
       findmyresult: 1,
     },
   },
-];
+]
 
-module.exports = { exampleCrankMaps };
+module.exports = { exampleCrankMaps }
