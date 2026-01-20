@@ -214,6 +214,9 @@ app.post('/api/oqcstatus', (req, res) => {
          console.error('DB query error (oqcstatus):', err);
          return res.status(500).json({ error: 'Database error' });
       }
+      // Log the raw query results for CI visibility
+      console.log('OQCSTATUS query results for', crankSerial, ':', results);
+
       if (!results || results.length === 0) {
          return res.json({ resultcodes: [] });
       }
