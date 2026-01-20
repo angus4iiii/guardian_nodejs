@@ -1,0 +1,55 @@
+name: Reserve Version on PR Open
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  reserve:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (with tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine latest release tag
+        id: latest
+        run: |
+          latest=$(git tag -l "v*" \
+            --sort=-v:refname \
+            | grep -v '\-dev-' \
+            | head -n 1)
+
+          if [ -z "$latest" ]; then
+            latest="v0.0.0"
+          fi
+
+          echo "latest=$latest" >> $GITHUB_OUTPUT
+
+      - name: Calculate next patch version
+        id: next
+        run: |
+          base=${{ steps.latest.outputs.latest }}
+          base=${base#v}
+
+          IFS=. read -r major minor patch <<< "$base"
+          next="v$major.$minor.$((patch+1))"
+
+          echo "next=$next" >> $GITHUB_OUTPUT
+
+      - name: Create reservation tag
+        run: |
+          tag="${{ steps.next.outputs.next }}-dev-pr${{ github.event.pull_request.number }}"
+
+          git tag "$tag"
+          git push origin "$tag"
+
+      - name: Comment reserved version
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ✅ **Version reserved:** `${{ steps.next.outputs.next }}`
+            🔒 Reservation tag: `${{ steps.next.outputs.next }}-dev-pr${{ github.event.pull_request.number }}`

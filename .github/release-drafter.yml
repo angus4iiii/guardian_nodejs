@@ -1,0 +1,13 @@
+name-template: "v$NEXT_PATCH_VERSION"
+tag-template: "v$NEXT_PATCH_VERSION"
+
+categories:
+  - title: 🚀 Features
+    labels: [feature]
+  - title: 🐛 Bug Fixes
+    labels: [bug]
+  - title: ⚠️ Breaking Changes
+    labels: [breaking]
+
+exclude-labels:
+  - skip-release-notes
