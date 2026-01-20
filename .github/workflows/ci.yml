@@ -153,7 +153,7 @@ jobs:
 
           CREATE TABLE IF NOT EXISTS deviceoqctestinfo (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            productionsn VARCHAR(255),
+            crankserialnumber VARCHAR(255),
             oqcstatus TEXT
           );
 
@@ -201,7 +201,7 @@ jobs:
             ('A1S9C24|47|00676', '1'),
             ('A0S18B25|34|00697', '0');
 
-          INSERT INTO deviceoqctestinfo (productionsn, oqcstatus) VALUES
+          INSERT INTO deviceoqctestinfo (crankserialnumber, oqcstatus) VALUES
             ('A1S18A25|40|02304', 'PASS'),
             ('A0S18B25|39|01368', 'PASS'),
             ('A1S9C24|47|00676', 'PASS');
