@@ -156,7 +156,6 @@ async function runSequence(crankSerial) {
     })
     if (oqcResponse.ok) {
       const oqcData = await oqcResponse.json()
-      console.log('OQC Data:', JSON.stringify(oqcData, null, 2))
       if (oqcData.resultcodes && oqcData.resultcodes.length > 0) {
         newResults[5] = oqcData.resultcodes[0] === 0 ? 0 : 1
       } else {
