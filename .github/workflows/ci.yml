@@ -204,7 +204,7 @@ jobs:
           INSERT INTO deviceoqctestinfo (productionsn, oqcstatus) VALUES
             ('A1S18A25|40|02304', 'PASS'),
             ('A0S18B25|39|01368', 'PASS'),
-            ('A1S9C24|47|00676', 'PASS'),
+            ('A1S9C24|47|00676', 'PASS');
 
           INSERT INTO crank_progress_events (productionsn, event) VALUES
             ('A0S18B25|39|01368', 'FindMy PASS');  
