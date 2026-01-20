@@ -151,6 +151,12 @@ jobs:
             side VARCHAR(10)
           );
 
+          CREATE TABLE IF NOT EXISTS deviceoqctestinfo (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            productionsn VARCHAR(255),
+            oqcstatus TEXT
+          );
+
           CREATE TABLE IF NOT EXISTS crank_progress_events (
             id INT AUTO_INCREMENT PRIMARY KEY,
             productionsn VARCHAR(255),
@@ -195,10 +201,12 @@ jobs:
             ('A1S9C24|47|00676', '1'),
             ('A0S18B25|34|00697', '0');
 
+          INSERT INTO deviceoqctestinfo (productionsn, oqcstatus) VALUES
+            ('A1S18A25|40|02304', 'PASS'),
+            ('A0S18B25|39|01368', 'PASS'),
+            ('A1S9C24|47|00676', 'PASS'),
+
           INSERT INTO crank_progress_events (productionsn, event) VALUES
-            ('A1S18A25|40|02304', 'OQC PASS'),
-            ('A0S18B25|39|01368', 'OQC PASS'),
-            ('A1S9C24|47|00676', 'OQC PASS'),
             ('A0S18B25|39|01368', 'FindMy PASS');  
 
           SQL
