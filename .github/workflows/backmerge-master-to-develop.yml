@@ -1,9 +1,9 @@
-name: Backmerge Master to Develop
+name: Backmerge Main to Develop
 
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   backmerge:
@@ -13,15 +13,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create Pull Request from master to develop
+      - name: Create Pull Request from main to develop
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           source: master
           target: develop
-          title: '🔄 Backmerge from master to develop'
+          title: '🔄 Backmerge from main to develop'
           body: |
-            This PR was automatically generated to sync changes from `master` into `develop`.
+            This PR was automatically generated to sync changes from `main` into `develop`.
             Please review and merge to keep branches aligned.
           draft: false
           delete-branch: false
