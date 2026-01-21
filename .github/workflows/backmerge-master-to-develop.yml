@@ -1,5 +1,8 @@
 name: Backmerge Main to Develop
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -12,6 +15,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Prepare backmerge branch
         env:
