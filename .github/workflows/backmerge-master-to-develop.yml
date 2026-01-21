@@ -17,11 +17,11 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          source: master
-          target: develop
+          base: develop
           title: '🔄 Backmerge from main to develop'
           body: |
             This PR was automatically generated to sync changes from `main` into `develop`.
             Please review and merge to keep branches aligned.
+          branch-suffix: backmerge
           draft: false
           delete-branch: false
