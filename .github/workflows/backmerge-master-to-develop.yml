@@ -18,9 +18,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          git fetch --no-tags --prune origin main:refs/remotes/origin/main develop:refs/remotes/origin/develop
-          # create branch from origin/main
-          git checkout -B backmerge-${{ github.run_number }} origin/main
+          # Ensure we have the remote develop ref
+          git fetch --no-tags --prune origin develop:refs/remotes/origin/develop || true
+          # Create branch from the currently checked-out commit (HEAD) instead of origin/main
+          git checkout -B backmerge-${{ github.run_number }} HEAD
           # compare against origin/develop (use remote ref to avoid ambiguous revision)
           if [ "$(git rev-list --right-only --count origin/develop...HEAD 2>/dev/null || true)" -eq 0 ]; then
             git commit --allow-empty -m "chore: backmerge placeholder [ci skip]" || true
