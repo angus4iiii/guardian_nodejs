@@ -13,6 +13,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Prepare backmerge branch
+        run: |
+          set -e
+          git fetch origin main develop
+          # create branch from main
+          git checkout -B backmerge-${{ github.run_number }} origin/main
+          # if main has no commits not in develop, create an empty commit to force a PR
+          if [ "$(git rev-list --right-only --count develop...HEAD)" -eq 0 ]; then
+            git commit --allow-empty -m "chore: backmerge placeholder [ci skip]" || true
+          fi
+          git push --set-upstream origin backmerge-${{ github.run_number }} --force
+
       - name: Create Pull Request from main to develop
         uses: peter-evans/create-pull-request@v6
         with:
