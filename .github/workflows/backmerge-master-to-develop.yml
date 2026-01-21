@@ -1,8 +1,5 @@
 name: Backmerge Main to Develop
 
-permissions:
-  contents: write
-
 on:
   push:
     branches:
@@ -15,26 +12,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
 
       - name: Prepare backmerge branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          # Ensure we have the remote develop ref
           git fetch --no-tags --prune origin develop:refs/remotes/origin/develop || true
-          # Create branch from the currently checked-out commit (HEAD) instead of origin/main
-          git checkout -B backmerge-${{ github.run_number }} HEAD
-          # compare against origin/develop (use remote ref to avoid ambiguous revision)
+          BRANCH="backmerge-${{ github.run_number }}"
+          # remove any stale remote branch so we always create a fresh one
+          if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
+            git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+            git push origin --delete "${BRANCH}" || true
+          fi
+          # create branch from current HEAD
+          git checkout -B "${BRANCH}" HEAD
+          # if branch is not ahead of develop, create an empty commit to force a PR
           if [ "$(git rev-list --right-only --count origin/develop...HEAD 2>/dev/null || true)" -eq 0 ]; then
             git commit --allow-empty -m "chore: backmerge placeholder [ci skip]" || true
           fi
-          # push using token auth to avoid permission issues
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-          git push --set-upstream origin backmerge-${{ github.run_number }} --force
+          git push --set-upstream origin "${BRANCH}" --force
 
       - name: Create Pull Request from main to develop
         uses: peter-evans/create-pull-request@v6
