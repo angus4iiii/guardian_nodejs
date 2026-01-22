@@ -16,19 +16,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}        # use PAT_TOKEN instead of GITHUB_TOKEN
           persist-credentials: true
 
       - name: Prepare backmerge branch
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           set -e
           git fetch --no-tags --prune origin develop:refs/remotes/origin/develop || true
           BRANCH="backmerge-${{ github.run_number }}"
           # remove any stale remote branch so we always create a fresh one
           if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
-            git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+            git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git"
             git push origin --delete "${BRANCH}" || true
           fi
           # create branch from current HEAD
@@ -40,7 +40,7 @@ jobs:
             git add "${FILE}"
             git commit -m "chore: backmerge placeholder (${GITHUB_SHA}) [ci skip]" || true
           fi
-          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git"
           git push --set-upstream origin "${BRANCH}" --force
 
       - name: Create Pull Request from main to develop
@@ -58,7 +58,7 @@ jobs:
 
       - name: Ensure PR exists (REST fallback)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
           BRANCH: backmerge-${{ github.run_number }}
         run: |
           set -e
@@ -66,7 +66,7 @@ jobs:
           head="${BRANCH}"
           base="develop"
           echo "Checking for existing PR head=${head} -> base=${base}"
-          exists=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+          exists=$(curl -s -H "Authorization: token ${PAT_TOKEN}" \
             "https://api.github.com/search/issues?q=repo:${repo}+type:pr+head:${head}+base:${base}" \
             | jq -r '.total_count')
           if [ "$exists" -gt 0 ]; then
@@ -75,7 +75,7 @@ jobs:
           fi
           echo "Creating PR for ${head} -> ${base}"
           http_code=$(curl -sS -o /tmp/pr.json -w "%{http_code}" -X POST \
-            -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Authorization: token ${PAT_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${repo}/pulls" \
             -d "{\"title\":\"🔄 Backmerge from main to develop\",\"head\":\"${head}\",\"base\":\"${base}\",\"body\":\"Automated backmerge created by CI.\"}")
