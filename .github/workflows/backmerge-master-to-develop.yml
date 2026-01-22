@@ -59,17 +59,14 @@ jobs:
       - name: Ensure PR exists (fallback)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: backmerge-${{ github.run_number }}-${{ github.run_id }}
+          BRANCH: backmerge-${{ github.run_number }}
         run: |
           set -e
-          # install GitHub CLI
-          sudo apt-get update && sudo apt-get install -y gh
-          # auth with token
-          printf '%s' "${GITHUB_TOKEN}" | gh auth login --with-token
-          # create PR if none exists (returns non-zero if exists)
+          # gh is preinstalled on ubuntu-latest; no interactive login required when GITHUB_TOKEN is set
+          # create PR only if none exists
           if ! gh pr list --repo "${{ github.repository }}" --head "${BRANCH}" --base develop --json number -q '.[0]'; then
             gh pr create --repo "${{ github.repository }}" --title "🔄 Backmerge from main to develop" \
-              --body "Automated backmerge" --base develop --head "${BRANCH}" --reviewer ""
+              --body "Automated backmerge" --base develop --head "${BRANCH}" --assignee "" || true
           else
             echo "PR for ${BRANCH} already exists"
           fi
