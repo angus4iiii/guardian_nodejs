@@ -26,16 +26,19 @@ jobs:
           set -e
           git fetch --no-tags --prune origin develop:refs/remotes/origin/develop || true
           BRANCH="backmerge-${{ github.run_number }}"
+          # remove any stale remote branch so we always create a fresh one
           if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
             git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
             git push origin --delete "${BRANCH}" || true
           fi
+          # create branch from current HEAD
           git checkout -B "${BRANCH}" HEAD
-          # If no difference vs origin/develop, make a real change (timestamp file) so PR can be created
+          # if no diff vs origin/develop, make a guaranteed-unique change (use run number + sha)
           if [ "$(git rev-list --right-only --count origin/develop...HEAD 2>/dev/null || true)" -eq 0 ]; then
-            echo "Backmerge run: $(date -u +%Y-%m-%dT%H:%M:%SZ)" > .github/backmerge.txt
-            git add .github/backmerge.txt
-            git commit -m "chore: backmerge placeholder (timestamp) [ci skip]" || true
+            FILE=".github/backmerge-${{ github.run_number }}-${GITHUB_SHA}.txt"
+            echo "Backmerge run: ${{ github.run_number }} $GITHUB_SHA $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${FILE}"
+            git add "${FILE}"
+            git commit -m "chore: backmerge placeholder (${GITHUB_SHA}) [ci skip]" || true
           fi
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           git push --set-upstream origin "${BRANCH}" --force
