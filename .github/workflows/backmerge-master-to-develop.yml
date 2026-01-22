@@ -25,17 +25,13 @@ jobs:
         run: |
           set -e
           git fetch --no-tags --prune origin develop:refs/remotes/origin/develop || true
-          # use a fully-unique branch name to avoid collisions with older runs
           BRANCH="backmerge-${{ github.run_number }}-${{ github.run_id }}"
           echo "Using branch: ${BRANCH}"
-          # delete remote if exists (requires PAT_TOKEN)
           if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
             git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git"
             git push origin --delete "${BRANCH}" || true
           fi
-          # create branch from current HEAD
           git checkout -B "${BRANCH}" HEAD
-          # If no diff vs origin/develop, make a real change (timestamp file) so PR can be created
           if [ "$(git rev-list --right-only --count origin/develop...HEAD 2>/dev/null || true)" -eq 0 ]; then
             FILE=".github/backmerge-${{ github.run_id }}.txt"
             echo "Backmerge run: ${{ github.run_number }} ${{ github.run_id }} $GITHUB_SHA $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${FILE}"
@@ -44,30 +40,15 @@ jobs:
           fi
           git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git"
           git push --set-upstream origin "${BRANCH}" --force
-          # export branch name for subsequent steps
           echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
 
-      - name: Create Pull Request from main to develop
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.PAT_TOKEN }}         # use PAT so action can create PR
-          base: develop
-          branch: ${{ env.BRANCH }}
-          title: '🔄 Backmerge from main to develop'
-          body: |
-            This PR was automatically generated to sync changes from `main` into `develop`.
-            Please review and merge to keep branches aligned.
-          draft: false
-          delete-branch: false
-
-      - name: Ensure PR exists (REST fallback)
+      - name: Create PR via REST API (guaranteed)
         env:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-          BRANCH: ${{ env.BRANCH }}
         run: |
           set -e
           repo="${{ github.repository }}"
-          head="${BRANCH}"
+          head="${{ env.BRANCH }}"
           base="develop"
           echo "Checking for existing PR head=${head} -> base=${base}"
           exists=$(curl -s -H "Authorization: token ${PAT_TOKEN}" \
