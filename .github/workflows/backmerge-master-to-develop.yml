@@ -73,7 +73,7 @@ jobs:
             exit 1
           fi
 
-      - name: Debug: show PR for backmerge branch
+      - name: Debug show PR for backmerge branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # use the branch exported earlier; fall back to run_number if not set
