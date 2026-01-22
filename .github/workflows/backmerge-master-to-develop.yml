@@ -70,3 +70,23 @@ jobs:
           else
             echo "PR for ${BRANCH} already exists"
           fi
+
+      - name: Debug: show PR for backmerge branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: backmerge-${{ github.run_number }}
+        run: |
+          set -e
+          echo "Searching for PR for head=${BRANCH} -> base=develop in repo=${{ github.repository }}"
+          # Try to find a matching PR and print JSON summary
+          PR_INFO=$(gh pr list --repo "${{ github.repository }}" --head "${BRANCH}" --base develop --state all --json number,title,url,state --jq '.[0]' || true)
+          if [ -n "$PR_INFO" ]; then
+            echo "PR found:"
+            echo "$PR_INFO"
+          else
+            echo "No PR found for ${BRANCH}. Listing last 50 PRs (all states):"
+            gh pr list --repo "${{ github.repository }}" --state all --limit 50 --json number,title,url,state --jq '.[] | "\(.number) \(.state) \(.title) \(.url)"'
+            echo "Also checking for PRs whose head branch name contains 'backmerge':"
+            gh pr list --repo "${{ github.repository }}" --state all --limit 100 --json number,title,url,headRefName --jq '.[] | select(.headRefName | test("backmerge")) | "\(.number) \(.headRefName) \(.title) \(.url)"' || true
+            exit 1
+          fi
