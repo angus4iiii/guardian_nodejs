@@ -55,3 +55,21 @@ jobs:
             Please review and merge to keep branches aligned.
           draft: false
           delete-branch: false
+
+      - name: Ensure PR exists (fallback)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: backmerge-${{ github.run_number }}-${{ github.run_id }}
+        run: |
+          set -e
+          # install GitHub CLI
+          sudo apt-get update && sudo apt-get install -y gh
+          # auth with token
+          printf '%s' "${GITHUB_TOKEN}" | gh auth login --with-token
+          # create PR if none exists (returns non-zero if exists)
+          if ! gh pr list --repo "${{ github.repository }}" --head "${BRANCH}" --base develop --json number -q '.[0]'; then
+            gh pr create --repo "${{ github.repository }}" --title "🔄 Backmerge from main to develop" \
+              --body "Automated backmerge" --base develop --head "${BRANCH}" --reviewer ""
+          else
+            echo "PR for ${BRANCH} already exists"
+          fi
