@@ -73,22 +73,29 @@ jobs:
             exit 1
           fi
 
-      - name: Debug show PR for backmerge branch
+      - name: Debug: show PR for backmerge branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: backmerge-${{ github.run_number }}
+          # use the branch exported earlier; fall back to run_number if not set
+          BRANCH: ${{ env.BRANCH }}
         run: |
           set -e
+          if [ -z "${BRANCH}" ]; then
+            BRANCH="backmerge-${{ github.run_number }}"
+          fi
           echo "Searching for PR for head=${BRANCH} -> base=develop in repo=${{ github.repository }}"
-          # Try to find a matching PR and print JSON summary
+          # try exact match first
           PR_INFO=$(gh pr list --repo "${{ github.repository }}" --head "${BRANCH}" --base develop --state all --json number,title,url,state --jq '.[0]' || true)
           if [ -n "$PR_INFO" ]; then
             echo "PR found:"
             echo "$PR_INFO"
-          else
-            echo "No PR found for ${BRANCH}. Listing last 50 PRs (all states):"
-            gh pr list --repo "${{ github.repository }}" --state all --limit 50 --json number,title,url,state --jq '.[] | "\(.number) \(.state) \(.title) \(.url)"'
-            echo "Also checking for PRs whose head branch name contains 'backmerge':"
-            gh pr list --repo "${{ github.repository }}" --state all --limit 100 --json number,title,url,headRefName --jq '.[] | select(.headRefName | test("backmerge")) | "\(.number) \(.headRefName) \(.title) \(.url)"' || true
-            exit 1
+            exit 0
           fi
+          # fallback: search for any PR whose headRefName contains the branch prefix
+          echo "No exact-match PR found for ${BRANCH}. Searching for PRs with headRefName matching prefix..."
+          gh pr list --repo "${{ github.repository }}" --state all --limit 100 --json number,title,url,state,headRefName \
+            --jq '.[] | select(.headRefName | test("^'"${BRANCH}"')) | "\(.number) \(.headRefName) \(.state) \(.title) \(.url)"' || true
+          echo "Also listing last 50 PRs (all states) for manual inspection:"
+          gh pr list --repo "${{ github.repository }}" --state all --limit 50 --json number,title,url,state --jq '.[] | "\(.number) \(.state) \(.title) \(.url)"' || true
+          # do not fail the job here — logs show PR info for manual verification
+          exit 0
