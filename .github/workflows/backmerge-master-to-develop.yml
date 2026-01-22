@@ -71,7 +71,7 @@ jobs:
             echo "PR for ${BRANCH} already exists"
           fi
 
-      - name: Debug: show PR for backmerge branch
+      - name: Debug show PR for backmerge branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: backmerge-${{ github.run_number }}
