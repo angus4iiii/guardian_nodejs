@@ -1,8 +1,8 @@
-name: Reserve Version on PR Open
+name: Reserve Version on PR Closed
 
 on:
   pull_request:
-    types: [opened]
+    types: [closed]
 
 jobs:
   reserve:
